@@ -13,7 +13,7 @@ const App = {
     selectedEvent: null,
     panelOpen: false,
     filtersOpen: false,
-    filters: { spaceType: [], category: [] },
+    filters: { spaceType: [] },
     loading: false,
     emptyState: null,
     searchQuery: '',
@@ -65,7 +65,7 @@ const App = {
       'geo-modal-overlay', 'geo-modal', 'geo-modal-title', 'geo-modal-text',
       'geo-modal-confirm', 'geo-modal-cancel',
       'filter-overlay', 'filter-sheet', 'filter-close', 'filter-apply',
-      'filter-clear', 'filter-space-types', 'filter-categories',
+      'filter-clear', 'filter-space-types',
       'bottom-nav', 'screen-matches',
       'access-overlay', 'access-sheet', 'access-content',
     ];
@@ -445,7 +445,7 @@ const App = {
   refreshEvents() {
     const events = this.getFilteredEvents();
     const activeFilters =
-      this.state.filters.spaceType.length + this.state.filters.category.length;
+      this.state.filters.spaceType.length;
 
     this.els['filter-badge'].textContent = activeFilters;
     this.els['filter-badge'].hidden = activeFilters === 0;
@@ -469,8 +469,7 @@ const App = {
 
   updateEmptyState(events) {
     const hasFilters =
-      this.state.filters.spaceType.length > 0 ||
-      this.state.filters.category.length > 0;
+      this.state.filters.spaceType.length > 0;
 
     let state = null;
     if (events.length === 0 && hasFilters) {
@@ -1099,7 +1098,6 @@ const App = {
     };
 
     renderChips(this.els['filter-space-types'], FILTER_OPTIONS.spaceType, 'spaceType');
-    renderChips(this.els['filter-categories'], FILTER_OPTIONS.category, 'category');
   },
 
   openFilters() {
@@ -1107,17 +1105,11 @@ const App = {
     this.els['filter-overlay'].classList.add('is-open');
     this.els['filter-sheet'].classList.add('is-open');
 
-    ['spaceType', 'category'].forEach((group) => {
-      const container =
-        group === 'spaceType'
-          ? this.els['filter-space-types']
-          : this.els['filter-categories'];
-      container.querySelectorAll('.filter-chip').forEach((chip) => {
-        chip.classList.toggle(
-          'is-active',
-          this.state.filters[group].includes(chip.dataset.id)
-        );
-      });
+    this.els['filter-space-types'].querySelectorAll('.filter-chip').forEach((chip) => {
+      chip.classList.toggle(
+        'is-active',
+        this.state.filters.spaceType.includes(chip.dataset.id)
+      );
     });
   },
 
@@ -1135,7 +1127,6 @@ const App = {
 
     this.state.filters = {
       spaceType: readChips(this.els['filter-space-types']),
-      category: readChips(this.els['filter-categories']),
     };
 
     this.closeFilters();
@@ -1143,11 +1134,8 @@ const App = {
   },
 
   clearFilters(applyNow = false) {
-    this.state.filters = { spaceType: [], category: [] };
+    this.state.filters = { spaceType: [] };
     this.els['filter-space-types']
-      .querySelectorAll('.filter-chip')
-      .forEach((c) => c.classList.remove('is-active'));
-    this.els['filter-categories']
       .querySelectorAll('.filter-chip')
       .forEach((c) => c.classList.remove('is-active'));
 

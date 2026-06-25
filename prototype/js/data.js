@@ -178,11 +178,6 @@ const FILTER_OPTIONS = {
     { id: 'casa', label: 'Casa' },
     { id: 'pena', label: 'Peña' },
   ],
-  category: [
-    { id: 'classic', label: 'Clásico' },
-    { id: 'community', label: 'Comunidad' },
-    { id: 'pena', label: 'Peña' },
-  ],
 };
 
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -259,9 +254,6 @@ function filterEvents(events, { radiusKm, filters, hasGeo }) {
   return events
     .filter((event) => {
       if (filters.spaceType.length && !filters.spaceType.includes(event.spaceType)) {
-        return false;
-      }
-      if (filters.category.length && !filters.category.includes(event.category)) {
         return false;
       }
       if (hasGeo && event.distanceKm !== undefined && event.distanceKm > radiusKm) {
