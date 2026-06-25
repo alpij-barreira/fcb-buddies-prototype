@@ -1301,9 +1301,7 @@ body {
 }
 
 .matches__header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  flex-shrink: 0;
   background: var(--background-surface);
   box-shadow: var(--shadow-1);
   padding: var(--space-4) var(--space-4) var(--space-3);

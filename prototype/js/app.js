@@ -54,7 +54,7 @@ const App = {
       'screen-geo-prompt', 'screen-manual-location', 'screen-geo-error',
       'screen-loading', 'screen-discover',
       'btn-geo-yes', 'btn-geo-no', 'btn-manual-submit', 'manual-city-input',
-      'manual-city-error', 'btn-geo-retry', 'btn-geo-search',
+      'manual-city-error', 'btn-geo-retry', 'btn-geo-search', 'btn-geo-demo',
       'loading-message', 'search-input', 'search-error',
       'match-card', 'radius-slider', 'radius-value',
       'btn-filters', 'filter-badge', 'btn-view-map', 'btn-view-list',
@@ -85,6 +85,7 @@ const App = {
 
     this.els['btn-geo-retry'].addEventListener('click', () => this.requestGeolocation());
     this.els['btn-geo-search'].addEventListener('click', () => this.showScreen('manual-location'));
+    this.els['btn-geo-demo'].addEventListener('click', () => this.useDemoLocation());
 
     this.els['search-input'].addEventListener('keydown', (e) => {
       if (e.key === 'Enter') this.submitSearch();
@@ -248,6 +249,15 @@ const App = {
       },
       { timeout: 8000 }
     );
+  },
+
+  useDemoLocation() {
+    this.state.userLocation = { lat: 51.5074, lng: -0.1278 };
+    this.state.hasGeo = true;
+    this.state.cityKey = 'geo';
+    this.state.city = null;
+    this.showLoading('Cargando eventos cerca…');
+    setTimeout(() => this.enterDiscover(), 1000);
   },
 
   submitManualCity() {
