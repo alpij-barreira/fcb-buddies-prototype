@@ -440,9 +440,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 3px;
-  background: var(--neutral-0);
-  border-radius: inherit;
+  padding: 2px;
 }
 
 .match-card__crest--barca {
@@ -883,14 +881,24 @@ body {
   z-index: 2101;
   background: var(--background-surface);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  padding: var(--space-4) var(--space-4) var(--space-8);
+  padding: var(--space-3) var(--space-4) var(--space-8);
   transition: transform 0.3s ease;
-  max-height: 80dvh;
+  max-height: 85dvh;
   overflow-y: auto;
 }
 
 .filter-sheet.is-open {
   transform: translateX(-50%) translateY(0);
+}
+
+.filter-sheet::before {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 4px;
+  background: var(--neutral-200);
+  border-radius: var(--radius-full);
+  margin: 0 auto var(--space-4);
 }
 
 .filter-sheet__header {
@@ -980,6 +988,232 @@ body {
   background: var(--blau-50);
   color: var(--blau-700);
   border: 1px solid var(--blau-200);
+}
+
+.alert--success {
+  background: var(--gold-50);
+  color: var(--gold-700);
+  border: 1px solid var(--gold-200);
+}
+
+.alert--danger {
+  background: var(--grana-50);
+  color: var(--grana-700);
+  border: 1px solid var(--grana-200);
+}
+
+/* Access flow */
+.access-sheet {
+  padding-bottom: var(--space-6);
+}
+
+.access-sheet__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.access-sheet__overline {
+  font: var(--text-label-s);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--content-tertiary);
+  margin-bottom: var(--space-1);
+}
+
+.access-sheet__title {
+  font: var(--text-heading-m);
+}
+
+.access-sheet__context {
+  font: var(--text-body-s);
+  color: var(--content-secondary);
+  margin-bottom: var(--space-5);
+  line-height: 1.5;
+}
+
+.access-sheet__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--content-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.access-sheet__close:hover {
+  background: var(--background-sunken);
+}
+
+/* Social login buttons */
+.access-social-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.access-social-btn {
+  height: 48px;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--background-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font: var(--text-label-m);
+  color: var(--content-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.access-social-btn:hover {
+  background: var(--background-sunken);
+}
+
+.access-social-btn__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* "— o —" divider */
+.access-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--content-tertiary);
+  font: var(--text-caption);
+  margin-bottom: var(--space-4);
+}
+
+.access-divider::before,
+.access-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* Secondary link (Ya tengo una cuenta / Crear cuenta nueva) */
+.access-sheet__link {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  background: none;
+  text-align: center;
+  color: var(--content-link);
+  font: var(--text-label-m);
+  cursor: pointer;
+}
+
+.access-sheet__link:hover {
+  color: var(--blau-600);
+}
+
+/* Form */
+.access-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.access-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.access-form__section-title {
+  font: var(--text-label-s);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--content-tertiary);
+  padding-top: var(--space-1);
+}
+
+.access-form__plain-input {
+  padding-left: var(--space-4);
+}
+
+.access-form__password-wrap {
+  position: relative;
+}
+
+.access-form__password-input {
+  padding-right: 76px;
+}
+
+.access-form__password-toggle {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
+  z-index: 1;
+  border: none;
+  background: none;
+  color: var(--content-link);
+  font: var(--text-label-s);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.access-form__password-toggle:hover {
+  color: var(--blau-600);
+}
+
+/* Terms checkbox */
+.access-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font: var(--text-body-s);
+  color: var(--content-secondary);
+  cursor: pointer;
+}
+
+.access-checkbox input {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--interactive-secondary);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.access-inline-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--content-link);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.access-checkbox__error {
+  margin-top: calc(-1 * var(--space-2));
+  font: var(--text-caption);
+  color: var(--content-danger);
+}
+
+@media (max-width: 380px) {
+  .access-form__row,
+  .access-social-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Geo toggle button (map control — encaja con los zoom controls de Leaflet) */

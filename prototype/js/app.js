@@ -18,10 +18,27 @@ const App = {
     emptyState: null,
     searchQuery: '',
     searchError: null,
-    cityKey: 'barcelona',
+    cityKey: 'london',
     placedEvents: [],
     scenarioId: null,
     filterEventsByMatch: true,
+    authModalOpen: false,
+    authStep: 'entry',
+    authUser: null,
+    reservationIntent: null,
+    accessSubmitting: false,
+    accessTechnicalError: false,
+    accessMessage: null,
+    existingUsers: [
+      {
+        firstName: 'Javier',
+        lastName: 'Culé',
+        email: 'javier@buddies.demo',
+        password: 'ForcaBarca123',
+        city: 'Londres',
+        area: 'Camden',
+      },
+    ],
   },
 
   els: {},
@@ -50,6 +67,7 @@ const App = {
       'filter-overlay', 'filter-sheet', 'filter-close', 'filter-apply',
       'filter-clear', 'filter-space-types', 'filter-categories',
       'bottom-nav', 'screen-matches',
+      'access-overlay', 'access-sheet', 'access-content',
     ];
     ids.forEach((id) => {
       this.els[id] = document.getElementById(id);
@@ -110,6 +128,11 @@ const App = {
       this.showMainTab(btn.dataset.mainTab);
     });
 
+    this.els['access-overlay']?.addEventListener('click', () => this.closeAccessFlow());
+    this.els['access-content']?.addEventListener('click', (e) => this.handleAccessClick(e));
+    this.els['access-content']?.addEventListener('input', (e) => this.handleAccessInput(e));
+    this.els['access-content']?.addEventListener('submit', (e) => this.handleAccessSubmit(e));
+
     this.renderFilterOptions();
   },
 
@@ -159,12 +182,12 @@ const App = {
     if (this.state.hasGeo && this.state.userLocation) {
       return this.state.userLocation;
     }
-    const city = CITIES[this.state.cityKey] || CITIES.barcelona;
+    const city = CITIES[this.state.cityKey] || CITIES.london;
     return { lat: city.lat, lng: city.lng };
   },
 
   getMapZoom() {
-    const city = CITIES[this.state.cityKey] || CITIES.barcelona;
+    const city = CITIES[this.state.cityKey] || CITIES.london;
     return city.zoom;
   },
 
@@ -216,8 +239,8 @@ const App = {
           lng: pos.coords.longitude,
         };
         this.state.hasGeo = true;
-        this.state.cityKey = 'barcelona';
-        this.state.city = CITIES.barcelona;
+        this.state.cityKey = 'geo';
+        this.state.city = null;
         setTimeout(() => this.enterDiscover(), 1000);
       },
       () => {
@@ -254,7 +277,7 @@ const App = {
     if (!query.trim()) return;
 
     if (!cityKey) {
-      this.state.searchError = 'No encontramos esa ciudad. Prueba con Barcelona, Madrid o Valencia.';
+      this.state.searchError = 'No encontramos esa ciudad. Prueba con Londres, Ámsterdam o París.';
       this.els['search-error'].textContent = this.state.searchError;
       this.els['search-error'].hidden = false;
       this.els['search-input'].classList.add('field__input--error');
@@ -358,7 +381,7 @@ const App = {
 
   initDiscover() {
     if (!this.state.city) {
-      this.state.city = CITIES.barcelona;
+      this.state.city = CITIES.london;
     }
 
     this.els['search-input'].value = this.state.city.name;
@@ -574,19 +597,470 @@ const App = {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
+      ${this.state.accessMessage && this.state.accessMessage.eventId === event.id ? `
+        <p class="alert alert--success">${this.state.accessMessage.text}</p>
+      ` : ''}
       <div class="event-panel__details">
         ${this.state.hasGeo ? `<div class="event-panel__detail"><strong>${dist}</strong>de distancia</div>` : ''}
         <div class="event-panel__detail"><strong>${event.reserved}/${event.capacity}</strong>plazas reservadas</div>
       </div>
       <div class="event-panel__actions">
         <button class="btn btn--ghost btn--no-action" type="button" tabindex="-1" style="flex: 1">Más detalles</button>
-        <button class="btn btn--primary btn--no-action" type="button" tabindex="-1" style="flex: 1">Reservar plaza</button>
+        <button class="btn btn--primary" type="button" id="panel-reserve-btn" style="flex: 1">Reservar plaza</button>
       </div>
     `;
 
     document.getElementById('panel-close-inner')?.addEventListener('click', () =>
       this.closePanel()
     );
+    document.getElementById('panel-reserve-btn')?.addEventListener('click', () =>
+      this.startReservationFlow(event)
+    );
+  },
+
+  startReservationFlow(event) {
+    this.state.reservationIntent = { eventId: event.id };
+    this.state.accessTechnicalError = false;
+    this.state.authStep = this.state.authUser ? 'ready' : 'entry';
+    this.openAccessFlow();
+  },
+
+  openAccessFlow() {
+    this.state.authModalOpen = true;
+    this.renderAccessFlow();
+    this.els['access-overlay'].classList.add('is-open');
+    this.els['access-sheet'].classList.add('is-open');
+  },
+
+  closeAccessFlow() {
+    this.state.authModalOpen = false;
+    this.state.accessTechnicalError = false;
+    this.state.accessSubmitting = false;
+    this.els['access-overlay'].classList.remove('is-open');
+    this.els['access-sheet'].classList.remove('is-open');
+  },
+
+  handleAccessClick(e) {
+    const action = e.target.closest('[data-access-action]')?.dataset.accessAction;
+    if (!action) return;
+
+    if (action === 'close') {
+      this.closeAccessFlow();
+      return;
+    }
+    if (action === 'go-register') {
+      this.state.authStep = 'register';
+      this.state.accessTechnicalError = false;
+      this.renderAccessFlow();
+      return;
+    }
+    if (action === 'go-login') {
+      this.state.authStep = 'login';
+      this.state.accessTechnicalError = false;
+      this.renderAccessFlow();
+      return;
+    }
+    if (action === 'demo-social') {
+      this.showInlineAccessNotice('Esta opción no es funcional en la demo. Continúa con correo electrónico.');
+      return;
+    }
+    if (action === 'toggle-password') {
+      const fieldId = e.target.closest('[data-field-id]')?.dataset.fieldId;
+      const input = fieldId ? document.getElementById(fieldId) : null;
+      if (!input) return;
+      input.type = input.type === 'password' ? 'text' : 'password';
+      e.target.closest('[data-access-action]').textContent =
+        input.type === 'password' ? 'Mostrar' : 'Ocultar';
+      return;
+    }
+    if (action === 'open-terms') {
+      this.showInlineAccessNotice('En la demo, términos y privacidad se muestran como contenido informativo.');
+      return;
+    }
+    if (action === 'continue-reservation') {
+      this.completeAccessFlow();
+    }
+  },
+
+  handleAccessInput(e) {
+    const field = e.target.closest('.field');
+    if (!field) return;
+    field.querySelector('.field__error')?.setAttribute('hidden', '');
+    e.target.classList.remove('field__input--error');
+  },
+
+  handleAccessSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    if (form.dataset.mode === 'register') {
+      this.submitRegister(form);
+    } else if (form.dataset.mode === 'login') {
+      this.submitLogin(form);
+    }
+  },
+
+  submitRegister(form) {
+    if (this.state.accessSubmitting) return;
+    this.clearAccessErrors(form);
+    const data = Object.fromEntries(new FormData(form).entries());
+    let hasErrors = false;
+
+    hasErrors = this.validateRequired(form, 'register-first-name', data.firstName, 'Introduce tu nombre.') || hasErrors;
+    hasErrors = this.validateRequired(form, 'register-last-name', data.lastName, 'Introduce tus apellidos.') || hasErrors;
+    hasErrors = this.validateEmail(form, 'register-email', data.email) || hasErrors;
+    hasErrors = this.validatePassword(form, 'register-password', data.password) || hasErrors;
+
+    if (!data.terms) {
+      this.showFieldError(form, 'register-terms', 'Debes aceptar los términos para continuar.');
+      hasErrors = true;
+    }
+
+    const existingUser = this.findUserByEmail(data.email);
+    if (existingUser) {
+      this.showFieldError(form, 'register-email', 'Ya existe una cuenta con este correo. Inicia sesión.');
+      hasErrors = true;
+    }
+
+    if (hasErrors) return;
+
+    this.state.accessSubmitting = true;
+    this.renderAccessFlow(data);
+
+    setTimeout(() => {
+      this.state.accessSubmitting = false;
+
+      if (String(data.email).trim().toLowerCase() === 'error@demo.com') {
+        this.state.accessTechnicalError = true;
+        this.renderAccessFlow(data);
+        return;
+      }
+
+      const newUser = {
+        firstName: String(data.firstName).trim(),
+        lastName: String(data.lastName).trim(),
+        email: String(data.email).trim().toLowerCase(),
+        password: String(data.password),
+        city: String(data.city || '').trim(),
+        area: String(data.area || '').trim(),
+      };
+      this.state.existingUsers.push(newUser);
+      this.state.authUser = newUser;
+      this.state.accessMessage = {
+        eventId: this.state.reservationIntent?.eventId,
+        text: 'Tu cuenta se ha creado correctamente. Ya puedes continuar con la reserva.',
+      };
+      this.state.authStep = 'ready';
+      this.renderAccessFlow();
+      setTimeout(() => {
+        if (this.state.authModalOpen && this.state.authStep === 'ready') {
+          this.completeAccessFlow();
+        }
+      }, 1100);
+    }, 800);
+  },
+
+  submitLogin(form) {
+    if (this.state.accessSubmitting) return;
+    this.clearAccessErrors(form);
+    const data = Object.fromEntries(new FormData(form).entries());
+    let hasErrors = false;
+
+    hasErrors = this.validateEmail(form, 'login-email', data.email) || hasErrors;
+    hasErrors = this.validateRequired(form, 'login-password', data.password, 'Introduce tu contraseña.') || hasErrors;
+    if (hasErrors) return;
+
+    const user = this.findUserByEmail(data.email);
+    if (!user || user.password !== data.password) {
+      this.showFieldError(form, 'login-email', 'No encontramos una cuenta con ese correo y contraseña.');
+      this.showFieldError(form, 'login-password', 'Revisa tus credenciales e inténtalo de nuevo.');
+      return;
+    }
+
+    this.state.authUser = user;
+    this.state.accessMessage = {
+      eventId: this.state.reservationIntent?.eventId,
+      text: 'Has iniciado sesión. Revisa el evento y continúa con la reserva.',
+    };
+    this.completeAccessFlow();
+  },
+
+  completeAccessFlow() {
+    const event = this.getReservationEvent();
+    this.closeAccessFlow();
+    if (!event) return;
+    if (event.reserved >= event.capacity) {
+      this.state.accessMessage = {
+        eventId: event.id,
+        text: 'Evento completo. Ya no quedan plazas disponibles para continuar.',
+      };
+    }
+    this.openPanel(event);
+  },
+
+  getReservationEvent() {
+    if (!this.state.reservationIntent?.eventId) return null;
+    return this.state.placedEvents.find((event) => event.id === this.state.reservationIntent.eventId) || null;
+  },
+
+  findUserByEmail(email) {
+    const normalized = String(email || '').trim().toLowerCase();
+    return this.state.existingUsers.find((user) => user.email === normalized) || null;
+  },
+
+  validateRequired(form, fieldId, value, message) {
+    if (String(value || '').trim()) return false;
+    this.showFieldError(form, fieldId, message);
+    return true;
+  },
+
+  validateEmail(form, fieldId, value) {
+    const email = String(value || '').trim();
+    if (!email) {
+      this.showFieldError(form, fieldId, 'Introduce tu correo electrónico.');
+      return true;
+    }
+    const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!isValid) {
+      this.showFieldError(form, fieldId, 'Introduce un correo válido.');
+      return true;
+    }
+    return false;
+  },
+
+  validatePassword(form, fieldId, value) {
+    const password = String(value || '');
+    if (!password) {
+      this.showFieldError(form, fieldId, 'Introduce una contraseña.');
+      return true;
+    }
+    if (password.length < 8) {
+      this.showFieldError(form, fieldId, 'La contraseña debe tener al menos 8 caracteres.');
+      return true;
+    }
+    return false;
+  },
+
+  clearAccessErrors(form) {
+    form.querySelectorAll('.field__error').forEach((el) => el.setAttribute('hidden', ''));
+    form.querySelectorAll('.field__input').forEach((input) => input.classList.remove('field__input--error'));
+    form.querySelectorAll('.access-checkbox__error').forEach((el) => el.setAttribute('hidden', ''));
+  },
+
+  showFieldError(form, fieldId, message) {
+    const input = form.querySelector(`#${fieldId}`);
+    if (input) {
+      input.classList.add('field__input--error');
+      const field = input.closest('.field');
+      field?.querySelector('.field__error')?.removeAttribute('hidden');
+      if (field?.querySelector('.field__error')) {
+        field.querySelector('.field__error').textContent = message;
+      }
+      return;
+    }
+
+    const checkbox = form.querySelector(`[data-error-for="${fieldId}"]`);
+    if (checkbox) {
+      checkbox.textContent = message;
+      checkbox.removeAttribute('hidden');
+    }
+  },
+
+  showInlineAccessNotice(message) {
+    const notice = this.els['access-content']?.querySelector('#access-inline-notice');
+    if (!notice) return;
+    notice.textContent = message;
+    notice.hidden = false;
+  },
+
+  renderAccessFlow(prefill = {}) {
+    const event = this.getReservationEvent() || this.state.selectedEvent;
+    if (!event) return;
+
+    const content = this.els['access-content'];
+    const titleId = 'access-title';
+    const eventLabel = `${event.name} · ${event.location}`;
+
+    if (this.state.authStep === 'entry') {
+      content.innerHTML = `
+        <div class="access-sheet__header">
+          <div>
+            <p class="access-sheet__overline">Reserva protegida</p>
+            <h2 class="access-sheet__title" id="${titleId}">Crea tu cuenta para reservar</h2>
+          </div>
+          <button type="button" class="access-sheet__close" data-access-action="close" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <p class="access-sheet__context">Estás intentando reservar en <strong>${eventLabel}</strong>. Al completar el registro volverás a este evento.</p>
+        <p class="alert alert--info" id="access-inline-notice" hidden></p>
+        <div class="access-social-grid">
+          <button type="button" class="access-social-btn" data-access-action="demo-social">
+            <svg class="access-social-btn__icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M19.6 10.2c0-.7-.1-1.4-.2-2H10v3.8h5.4c-.2 1.2-1 2.3-2.1 3v2.5h3.4c2-1.8 3.1-4.5 3.1-7.3z" fill="#4285F4"/>
+              <path d="M10 20c2.7 0 5-.9 6.6-2.4l-3.4-2.5c-.8.6-1.9.9-3.2.9-2.5 0-4.6-1.7-5.4-3.9H1.1v2.6C2.7 17.9 6.1 20 10 20z" fill="#34A853"/>
+              <path d="M4.6 12.1C4.4 11.5 4.3 10.8 4.3 10s.1-1.5.3-2.1V5.3H1.1C.4 6.7 0 8.3 0 10s.4 3.3 1.1 4.7l3.5-2.6z" fill="#FBBC04"/>
+              <path d="M10 4c1.4 0 2.7.5 3.7 1.4l2.8-2.8C14.9.9 12.7 0 10 0 6.1 0 2.7 2.1 1.1 5.3l3.5 2.6C5.4 5.7 7.5 4 10 4z" fill="#EA4335"/>
+            </svg>
+            Google
+          </button>
+          <button type="button" class="access-social-btn" data-access-action="demo-social">
+            <svg class="access-social-btn__icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M15.4 10.4c0-2.5 2-3.7 2.1-3.8-1.2-1.7-3-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9C5 4.7 3 6 1.9 8c-2.3 4.2-.6 10.4 1.6 13.8 1.1 1.6 2.4 3.4 4.1 3.3 1.6-.1 2.2-1 4.2-1 2 0 2.5 1 4.3.9 1.8-.1 2.9-1.6 4-3.3.8-1.2 1.2-2.3 1.2-2.4-.1 0-3.3-1.2-3.9-4.9z"/>
+              <path d="M12.7 3.2c.9-1.1 1.5-2.6 1.3-4.2-1.3.1-2.9.9-3.8 1.9-.8 1-1.6 2.5-1.3 4 1.4.1 2.9-.6 3.8-1.7z"/>
+            </svg>
+            Apple
+          </button>
+        </div>
+        <div class="access-divider">o</div>
+        <button type="button" class="btn btn--primary btn--block" data-access-action="go-register">Continuar con correo electrónico</button>
+        <button type="button" class="access-sheet__link" data-access-action="go-login">Ya tengo una cuenta</button>
+      `;
+      return;
+    }
+
+    if (this.state.authStep === 'login') {
+      content.innerHTML = `
+        <div class="access-sheet__header">
+          <div>
+            <p class="access-sheet__overline">Acceso</p>
+            <h2 class="access-sheet__title" id="${titleId}">Inicia sesión para reservar</h2>
+          </div>
+          <button type="button" class="access-sheet__close" data-access-action="close" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <p class="access-sheet__context">Volverás automáticamente a <strong>${eventLabel}</strong> al completar el acceso.</p>
+        <p class="alert alert--info" id="access-inline-notice" hidden></p>
+        <div class="access-social-grid">
+          <button type="button" class="access-social-btn" data-access-action="demo-social">
+            <svg class="access-social-btn__icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M19.6 10.2c0-.7-.1-1.4-.2-2H10v3.8h5.4c-.2 1.2-1 2.3-2.1 3v2.5h3.4c2-1.8 3.1-4.5 3.1-7.3z" fill="#4285F4"/>
+              <path d="M10 20c2.7 0 5-.9 6.6-2.4l-3.4-2.5c-.8.6-1.9.9-3.2.9-2.5 0-4.6-1.7-5.4-3.9H1.1v2.6C2.7 17.9 6.1 20 10 20z" fill="#34A853"/>
+              <path d="M4.6 12.1C4.4 11.5 4.3 10.8 4.3 10s.1-1.5.3-2.1V5.3H1.1C.4 6.7 0 8.3 0 10s.4 3.3 1.1 4.7l3.5-2.6z" fill="#FBBC04"/>
+              <path d="M10 4c1.4 0 2.7.5 3.7 1.4l2.8-2.8C14.9.9 12.7 0 10 0 6.1 0 2.7 2.1 1.1 5.3l3.5 2.6C5.4 5.7 7.5 4 10 4z" fill="#EA4335"/>
+            </svg>
+            Google
+          </button>
+          <button type="button" class="access-social-btn" data-access-action="demo-social">
+            <svg class="access-social-btn__icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M15.4 10.4c0-2.5 2-3.7 2.1-3.8-1.2-1.7-3-1.9-3.6-1.9-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9C5 4.7 3 6 1.9 8c-2.3 4.2-.6 10.4 1.6 13.8 1.1 1.6 2.4 3.4 4.1 3.3 1.6-.1 2.2-1 4.2-1 2 0 2.5 1 4.3.9 1.8-.1 2.9-1.6 4-3.3.8-1.2 1.2-2.3 1.2-2.4-.1 0-3.3-1.2-3.9-4.9z"/>
+              <path d="M12.7 3.2c.9-1.1 1.5-2.6 1.3-4.2-1.3.1-2.9.9-3.8 1.9-.8 1-1.6 2.5-1.3 4 1.4.1 2.9-.6 3.8-1.7z"/>
+            </svg>
+            Apple
+          </button>
+        </div>
+        <div class="access-divider">o</div>
+        <form class="access-form" data-mode="login" novalidate>
+          <div class="field">
+            <label class="field__label" for="login-email">Correo electrónico</label>
+            <div class="field__input-wrap">
+              <input class="field__input access-form__plain-input" id="login-email" name="email" type="email" autocomplete="email" value="${prefill.email || ''}">
+            </div>
+            <p class="field__error" hidden></p>
+          </div>
+          <div class="field">
+            <label class="field__label" for="login-password">Contraseña</label>
+            <div class="field__input-wrap access-form__password-wrap">
+              <input class="field__input access-form__plain-input access-form__password-input" id="login-password" name="password" type="password" autocomplete="current-password">
+              <button class="access-form__password-toggle" type="button" data-access-action="toggle-password" data-field-id="login-password">Mostrar</button>
+            </div>
+            <p class="field__error" hidden></p>
+          </div>
+          <button class="btn btn--primary btn--block" type="submit">Iniciar sesión y continuar</button>
+        </form>
+        <button type="button" class="access-sheet__link" data-access-action="go-register">Crear una cuenta nueva</button>
+      `;
+      return;
+    }
+
+    if (this.state.authStep === 'ready') {
+      content.innerHTML = `
+        <div class="access-sheet__header">
+          <div>
+            <p class="access-sheet__overline">Cuenta creada</p>
+            <h2 class="access-sheet__title" id="${titleId}">Tu cuenta ya está lista</h2>
+          </div>
+        </div>
+        <p class="alert alert--success">Tu cuenta se ha creado correctamente.</p>
+        <p class="access-sheet__context">Volverás al evento para revisar la reserva de <strong>${eventLabel}</strong>.</p>
+        <button class="btn btn--primary btn--block" type="button" data-access-action="continue-reservation">Continuar con la reserva</button>
+      `;
+      return;
+    }
+
+    content.innerHTML = `
+      <div class="access-sheet__header">
+        <div>
+          <p class="access-sheet__overline">Registro con correo</p>
+          <h2 class="access-sheet__title" id="${titleId}">Completa tus datos</h2>
+        </div>
+        <button type="button" class="access-sheet__close" data-access-action="close" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      ${this.state.accessTechnicalError ? `
+        <p class="alert alert--danger">No pudimos crear la cuenta ahora mismo. Tus datos se han conservado — inténtalo de nuevo.</p>
+      ` : ''}
+      <form class="access-form" data-mode="register" novalidate>
+        <div class="field">
+          <label class="field__label" for="register-first-name">Nombre *</label>
+          <div class="field__input-wrap">
+            <input class="field__input access-form__plain-input" id="register-first-name" name="firstName" autocomplete="given-name" value="${prefill.firstName || ''}">
+          </div>
+          <p class="field__error" hidden></p>
+        </div>
+        <div class="field">
+          <label class="field__label" for="register-last-name">Apellidos *</label>
+          <div class="field__input-wrap">
+            <input class="field__input access-form__plain-input" id="register-last-name" name="lastName" autocomplete="family-name" value="${prefill.lastName || ''}">
+          </div>
+          <p class="field__error" hidden></p>
+        </div>
+        <div class="field">
+          <label class="field__label" for="register-email">Correo electrónico *</label>
+          <div class="field__input-wrap">
+            <input class="field__input access-form__plain-input" id="register-email" name="email" type="email" autocomplete="email" value="${prefill.email || ''}">
+          </div>
+          <p class="field__error" hidden></p>
+        </div>
+        <div class="field">
+          <label class="field__label" for="register-password">Contraseña *</label>
+          <div class="field__input-wrap access-form__password-wrap">
+            <input class="field__input access-form__plain-input access-form__password-input" id="register-password" name="password" type="password" autocomplete="new-password" value="${prefill.password || ''}">
+            <button class="access-form__password-toggle" type="button" data-access-action="toggle-password" data-field-id="register-password">Mostrar</button>
+          </div>
+          <p class="field__helper">Mínimo 8 caracteres.</p>
+          <p class="field__error" hidden></p>
+        </div>
+        <p class="access-form__section-title">Datos opcionales</p>
+        <div class="access-form__row">
+          <div class="field">
+            <label class="field__label" for="register-city">Ciudad</label>
+            <div class="field__input-wrap">
+              <input class="field__input access-form__plain-input" id="register-city" name="city" autocomplete="address-level2" value="${prefill.city || ''}">
+            </div>
+            <p class="field__error" hidden></p>
+          </div>
+          <div class="field">
+            <label class="field__label" for="register-area">Zona o barrio</label>
+            <div class="field__input-wrap">
+              <input class="field__input access-form__plain-input" id="register-area" name="area" value="${prefill.area || ''}">
+            </div>
+            <p class="field__error" hidden></p>
+          </div>
+        </div>
+        <label class="access-checkbox">
+          <input id="register-terms" name="terms" type="checkbox" ${prefill.terms ? 'checked' : ''}>
+          <span>Acepto los <button class="access-inline-link" type="button" data-access-action="open-terms">términos de uso</button> y la <button class="access-inline-link" type="button" data-access-action="open-terms">política de privacidad</button>.</span>
+        </label>
+        <p class="field__error access-checkbox__error" data-error-for="register-terms" hidden></p>
+        <button class="btn btn--primary btn--block" type="submit" ${this.state.accessSubmitting ? 'disabled' : ''}>
+          ${this.state.accessSubmitting ? 'Creando cuenta…' : 'Crear cuenta y continuar'}
+        </button>
+      </form>
+      <button type="button" class="access-sheet__link" data-access-action="go-login">Ya tengo una cuenta</button>
+    `;
   },
 
   setViewMode(mode) {

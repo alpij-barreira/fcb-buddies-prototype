@@ -405,7 +405,8 @@ const TEAM_LOGOS = {
   'Atlético Madrid Femenino':  _E + '1068.png',
   'Real Sociedad':             _E + '89.png',
   'Chelsea FC Women':          _E + '363.png',
-  'Levante UD':                _E + '747.png',
+  'Levante UD':                'https://r2.thesportsdb.com/images/media/team/badge/xwtxsx1473503739.png',
+  'UDG Tenerife':              'https://upload.wikimedia.org/wikipedia/en/thumb/1/12/UD_Granadilla_Tenerife.png/250px-UD_Granadilla_Tenerife.png',
 };
 
 /**
@@ -421,7 +422,7 @@ function crestHtml(teamName, abbr, modifier, extraStyle) {
   const style = extraStyle ? ` style="${extraStyle}"` : '';
   return `<span class="match-card__crest match-card__crest--${modifier}"${style}>${
     logo
-      ? `<img src="${logo}" alt="" class="match-card__crest-img" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img src="${logo}" alt="" class="match-card__crest-img" loading="lazy" onload="this.parentElement.style.background='#fff'" onerror="this.style.display='none'">`
       : ''
   }${abbr}</span>`;
 }

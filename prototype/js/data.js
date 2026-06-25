@@ -1,138 +1,173 @@
 /* Datos de demo — escenarios por ciudad y geolocalización */
 
 const CITIES = {
-  barcelona: { name: 'Barcelona', lat: 41.3874, lng: 2.1686, zoom: 14 },
-  madrid: { name: 'Madrid', lat: 40.4168, lng: -3.7038, zoom: 13 },
-  valencia: { name: 'Valencia', lat: 39.4699, lng: -0.3763, zoom: 13 },
+  london:    { name: 'Londres',    lat: 51.5074, lng: -0.1278, zoom: 13 },
+  amsterdam: { name: 'Ámsterdam',  lat: 52.3676, lng:  4.9041, zoom: 13 },
+  paris:     { name: 'París',      lat: 48.8566, lng:  2.3522, zoom: 13 },
 };
 
 const CITY_ALIASES = {
-  barcelona: 'barcelona',
-  bcn: 'barcelona',
-  'barça': 'barcelona',
-  barca: 'barcelona',
-  madrid: 'madrid',
-  valencia: 'valencia',
+  london:    'london',
+  londres:   'london',
+  ldn:       'london',
+  amsterdam: 'amsterdam',
+  ámsterdam: 'amsterdam',
+  ams:       'amsterdam',
+  paris:     'paris',
+  parís:     'paris',
 };
 
 /** Plantillas sin coordenadas — se colocan al azar al cargar el escenario */
 const EVENT_TEMPLATES = {
+
+  /* ── Eventos de geolocalización (3, distancias escalonadas) ── */
   geo: [
     {
       id: 'geo-1',
       matchId: 'match-m-clasico',
-      name: 'Clásico en Bar Leo',
-      location: 'Bar Leo, Gràcia',
-      address: 'Carrer de la Revolució, 17',
+      name: 'Sports Bar cercano — El Clásico',
+      location: 'Bar deportivo',
+      address: 'A menos de 1 km de ti',
       category: 'classic',
       spaceType: 'bar',
       capacity: 40,
-      reserved: 28,
+      reserved: 27,
+      distRange: { min: 0.4, max: 1.2 },
     },
     {
       id: 'geo-2',
       matchId: 'match-m-clasico',
-      name: 'Viewing Party Eixample',
-      location: 'Café de la Pedrera',
-      address: 'Passeig de Gràcia, 92',
+      name: 'Viewing Party — Culés abroad',
+      location: 'Comunidad local',
+      address: 'A menos de 3 km de ti',
       category: 'community',
-      spaceType: 'bar',
-      capacity: 25,
-      reserved: 12,
+      spaceType: 'casa',
+      capacity: 15,
+      reserved: 9,
+      distRange: { min: 1.5, max: 3.0 },
     },
     {
       id: 'geo-3',
       matchId: 'match-m-clasico',
-      name: 'Peña Barcelonista Poblenou',
-      location: 'Local Peña Poblenou',
-      address: 'Carrer de Pujades, 56',
+      name: 'Peña Barcelonista — zona',
+      location: 'Peña barcelonista',
+      address: 'A menos de 6 km de ti',
       category: 'pena',
       spaceType: 'pena',
-      capacity: 60,
-      reserved: 45,
-    },
-    {
-      id: 'geo-4',
-      matchId: 'match-m-clasico',
-      name: 'Casa de Marc — Clásico',
-      location: 'Sants',
-      address: 'Carrer de Sants, 120',
-      category: 'community',
-      spaceType: 'casa',
-      capacity: 12,
-      reserved: 8,
+      capacity: 55,
+      reserved: 41,
+      distRange: { min: 3.5, max: 5.5 },
     },
   ],
-  barcelona: [
+
+  /* ── Londres ── */
+  london: [
     {
-      id: 'bcn-1',
+      id: 'lon-1',
       matchId: 'match-m-clasico',
-      name: 'Clásico en Belushi\'s',
-      location: 'Belushi\'s Bar, Gòtic',
-      address: 'Carrer de Ferran, 6',
+      name: 'El Clásico at The Cock & Bull',
+      location: 'The Cock & Bull, Shoreditch',
+      address: '7 Holywell Lane, EC2A 3ET',
       category: 'classic',
       spaceType: 'bar',
-      capacity: 50,
-      reserved: 35,
+      capacity: 60,
+      reserved: 44,
     },
     {
-      id: 'bcn-2',
+      id: 'lon-2',
       matchId: 'match-m-clasico',
-      name: 'Grupo culés Born',
-      location: 'El Born Centre',
-      address: 'Plaça Comercial, 12',
+      name: 'Culés in London — Canary Wharf',
+      location: 'Piso comunitario, Isle of Dogs',
+      address: '14 Westferry Rd, E14 8JH',
+      category: 'community',
+      spaceType: 'casa',
+      capacity: 18,
+      reserved: 7,
+    },
+    {
+      id: 'lon-3',
+      matchId: 'match-m-clasico',
+      name: 'Peña Barcelonista de Londres',
+      location: 'Camden Blaugrana Club',
+      address: '52 Parkway, NW1 7AH',
+      category: 'pena',
+      spaceType: 'pena',
+      capacity: 85,
+      reserved: 68,
+    },
+  ],
+
+  /* ── Ámsterdam ── */
+  amsterdam: [
+    {
+      id: 'ams-1',
+      matchId: 'match-m-clasico',
+      name: 'El Clásico at Café de Sport',
+      location: 'Café de Sport, Leidseplein',
+      address: 'Leidseplein 12, 1017 PT',
+      category: 'classic',
+      spaceType: 'bar',
+      capacity: 45,
+      reserved: 31,
+    },
+    {
+      id: 'ams-2',
+      matchId: 'match-m-clasico',
+      name: 'Barça Dam Crew — Jordaan',
+      location: 'Piso comunidad, Jordaan',
+      address: 'Elandsgracht 38, 1016 TX',
+      category: 'community',
+      spaceType: 'casa',
+      capacity: 14,
+      reserved: 10,
+    },
+    {
+      id: 'ams-3',
+      matchId: 'match-m-clasico',
+      name: 'Blaugrana Amsterdam — Viewing',
+      location: 'Het Sportcafé, De Pijp',
+      address: 'Ferdinand Bolstraat 24, 1072 LJ',
       category: 'community',
       spaceType: 'bar',
       capacity: 30,
       reserved: 18,
     },
-    {
-      id: 'bcn-3',
-      matchId: 'match-m-clasico',
-      name: 'Peña Barcelonista',
-      location: 'Poblenou',
-      address: 'Carrer de Pujades, 56',
-      category: 'pena',
-      spaceType: 'pena',
-      capacity: 60,
-      reserved: 45,
-    },
   ],
-  madrid: [
+
+  /* ── París ── */
+  paris: [
     {
-      id: 'mad-1',
+      id: 'par-1',
       matchId: 'match-m-clasico',
-      name: 'Madrid Culés — Clásico',
-      location: 'Irish Pub Malasaña',
-      address: 'Calle de Manuela Malasaña, 10',
+      name: 'El Clásico au Frog & Princess',
+      location: 'Frog & Princess, Saint-Germain',
+      address: '9 Rue Princesse, 75006',
       category: 'classic',
       spaceType: 'bar',
-      capacity: 35,
-      reserved: 22,
+      capacity: 50,
+      reserved: 36,
     },
     {
-      id: 'mad-2',
+      id: 'par-2',
       matchId: 'match-m-clasico',
-      name: 'Viewing Party Chamberí',
-      location: 'Bar Deportivo Chamberí',
-      address: 'Calle de Bravo Murillo, 88',
+      name: 'Culés de Paris — Bastille',
+      location: 'Appartement communautaire',
+      address: '22 Rue de la Roquette, 75011',
       category: 'community',
-      spaceType: 'bar',
+      spaceType: 'casa',
       capacity: 20,
       reserved: 14,
     },
-  ],
-  valencia: [
     {
-      id: 'val-1',
+      id: 'par-3',
       matchId: 'match-m-clasico',
-      name: 'Peña Valenciana Blaugrana',
-      location: 'Bar El Turia',
-      address: 'Carrer de Xàtiva, 28',
+      name: 'Peña Barcelonista de París',
+      location: 'Espace Blaugrana, Marais',
+      address: '15 Rue des Archives, 75004',
       category: 'pena',
       spaceType: 'pena',
-      capacity: 45,
-      reserved: 31,
+      capacity: 70,
+      reserved: 55,
     },
   ],
 };
@@ -186,6 +221,7 @@ function randomPointNear(centerLat, centerLng, minKm, maxKm) {
 /**
  * Coloca eventos al azar cerca del centro del mapa.
  * Si el partido seleccionado no tiene eventos, devuelve lista vacía.
+ * Eventos geo usan distRange por plantilla para garantizar distancias escalonadas.
  */
 function spawnEventsForScenario(hasGeo, cityKey, center, selectedMatch, filterByMatch = true) {
   if (filterByMatch && selectedMatch && !matchHasEvents(selectedMatch)) {
@@ -195,19 +231,19 @@ function spawnEventsForScenario(hasGeo, cityKey, center, selectedMatch, filterBy
   const key = hasGeo ? 'geo' : cityKey;
   const templates = EVENT_TEMPLATES[key] || [];
 
-  const spread = hasGeo
-    ? { min: 0.4, max: 4.5, withDistance: true }
-    : { min: 0.8, max: 5.5, withDistance: false };
-
   return templates.map((tpl) => {
-    const point = randomPointNear(center.lat, center.lng, spread.min, spread.max);
+    const range = hasGeo && tpl.distRange
+      ? tpl.distRange
+      : { min: 0.8, max: 5.5 };
+
+    const point = randomPointNear(center.lat, center.lng, range.min, range.max);
     const event = {
       ...tpl,
       matchId: selectedMatch?.id || tpl.matchId,
       lat: point.lat,
       lng: point.lng,
     };
-    if (spread.withDistance) {
+    if (hasGeo) {
       event.distanceKm = haversineKm(
         center.lat,
         center.lng,
