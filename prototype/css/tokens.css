@@ -102,11 +102,11 @@
   --font-ui: 'Onest', system-ui, sans-serif;
   --font-display: 'Barlow Condensed', system-ui, sans-serif;
 
-  --text-display-hero: 700 56px/56px var(--font-display);
-  --text-heading-xl: 700 28px/34px var(--font-ui);
-  --text-heading-l: 700 24px/30px var(--font-ui);
-  --text-heading-m: 600 20px/26px var(--font-ui);
-  --text-heading-s: 600 17px/24px var(--font-ui);
+  --text-display-hero: 700 56px/60px var(--font-display);
+  --text-heading-xl: 700 32px/38px var(--font-display);
+  --text-heading-l: 700 28px/34px var(--font-display);
+  --text-heading-m: 600 22px/28px var(--font-display);
+  --text-heading-s: 600 18px/22px var(--font-display);
   --text-body-l: 400 17px/26px var(--font-ui);
   --text-body-m: 400 15px/22px var(--font-ui);
   --text-body-s: 400 13px/18px var(--font-ui);
