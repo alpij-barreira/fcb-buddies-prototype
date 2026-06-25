@@ -32,10 +32,10 @@
         <label class="field__label" for="manual-city-input">Ciudad o zona</label>
         <div class="field__input-wrap">
           <svg class="field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="manual-city-input" class="field__input" placeholder="Ej. Barcelona" autocomplete="off">
+          <input type="text" id="manual-city-input" class="field__input" placeholder="Ej. Londres" autocomplete="off">
         </div>
-        <p class="field__error" id="manual-city-error" hidden>No encontramos esa ciudad. Prueba con Barcelona, Madrid o Valencia.</p>
-        <p class="field__helper">Barcelona · Madrid · Valencia</p>
+        <p class="field__error" id="manual-city-error" hidden>No encontramos esa ciudad. Prueba con Londres, Ámsterdam o París.</p>
+        <p class="field__helper">Londres · Ámsterdam · París</p>
       </div>
       <button type="button" class="btn btn--primary btn--block" id="btn-manual-submit" style="max-width: 320px">Explorar eventos</button>
     </section>
@@ -144,6 +144,12 @@
     <div class="sheet-overlay" id="match-modal-overlay" aria-hidden="true"></div>
     <div class="filter-sheet match-modal" id="match-modal" role="dialog" aria-modal="true" aria-label="Detalle del partido">
       <div id="match-modal-content"></div>
+    </div>
+
+    <!-- Flujo de acceso para reservar -->
+    <div class="sheet-overlay" id="access-overlay" aria-hidden="true"></div>
+    <div class="filter-sheet access-sheet" id="access-sheet" role="dialog" aria-modal="true" aria-labelledby="access-title">
+      <div id="access-content"></div>
     </div>
 
     <!-- Navegación inferior -->
