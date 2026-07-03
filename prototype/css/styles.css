@@ -222,16 +222,11 @@ body {
 
 /* Geo prompt */
 .geo-prompt__logo {
-  width: 80px;
-  height: 80px;
+  width: 96px;
+  height: 96px;
   margin-bottom: var(--space-6);
-  background: var(--background-brand);
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--content-on-brand);
-  font: 700 32px/1 var(--font-display);
+  object-fit: contain;
+  display: block;
 }
 
 .geo-prompt__title {
@@ -1351,18 +1346,6 @@ body {
   background: var(--background-surface);
   color: var(--content-primary);
   box-shadow: var(--shadow-1);
-}
-
-.matches-competition-filters {
-  overflow-x: auto;
-  flex-wrap: nowrap;
-  padding-bottom: var(--space-1);
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.matches-competition-filters::-webkit-scrollbar {
-  display: none;
 }
 
 .matches-tabs {

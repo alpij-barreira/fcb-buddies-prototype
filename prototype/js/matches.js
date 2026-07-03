@@ -3,7 +3,6 @@
 const Matches = {
   state: {
     team: 'men',
-    competitionFilter: null,
     tab: 'upcoming',
     calendarMonth: new Date(DEMO_TODAY.getFullYear(), DEMO_TODAY.getMonth(), 1),
     selectedDay: null,
@@ -19,7 +18,6 @@ const Matches = {
     this.cacheElements();
     this.bindEvents();
     this.renderTeamToggle();
-    this.renderCompetitionFilters();
     this.renderTabs();
     this.render();
   },
@@ -28,7 +26,6 @@ const Matches = {
     const ids = [
       'screen-matches',
       'matches-team-toggle',
-      'matches-competition-filters',
       'matches-tabs',
       'matches-tab-upcoming',
       'matches-tab-competition',
@@ -70,20 +67,9 @@ const Matches = {
       const btn = e.target.closest('[data-team]');
       if (!btn) return;
       this.state.team = btn.dataset.team;
-      this.state.competitionFilter = null;
       this.state.selectedCompetitionTab = null;
       this.state.selectedDay = null;
       this.renderTeamToggle();
-      this.renderCompetitionFilters();
-      this.render();
-    });
-
-    this.els['matches-competition-filters']?.addEventListener('click', (e) => {
-      const chip = e.target.closest('[data-competition]');
-      if (!chip) return;
-      const id = chip.dataset.competition || null;
-      this.state.competitionFilter = this.state.competitionFilter === id ? null : id;
-      this.renderCompetitionFilters();
       this.render();
     });
 
@@ -118,15 +104,6 @@ const Matches = {
         this.state.calendarLoadError = false;
         this.render();
       }
-      if (e.target.closest('#match-modal-clear-comp-filter')) {
-        this.state.competitionFilter = null;
-        this.state.selectedCompetitionTab = null;
-        this.renderCompetitionFilters();
-        this.closeModal();
-        this.state.tab = 'competition';
-        this.renderTabs();
-        this.render();
-      }
     });
   },
 
@@ -136,7 +113,6 @@ const Matches = {
     }
     this.state.calendarMonth = new Date(DEMO_TODAY.getFullYear(), DEMO_TODAY.getMonth(), 1);
     this.renderTeamToggle();
-    this.renderCompetitionFilters();
     this.renderTabs();
     this.render();
   },
@@ -151,18 +127,6 @@ const Matches = {
         <button type="button" class="segmented-control__btn${this.state.team === 'men' ? ' is-active' : ''}" data-team="men">Masculino</button>
         <button type="button" class="segmented-control__btn${this.state.team === 'women' ? ' is-active' : ''}" data-team="women">Femenino</button>
       </div>
-    `;
-  },
-
-  renderCompetitionFilters() {
-    const el = this.els['matches-competition-filters'];
-    if (!el) return;
-    const comps = getCompetitionsForTeam(this.state.team);
-    el.innerHTML = `
-      <button type="button" class="filter-chip${!this.state.competitionFilter ? ' is-active' : ''}" data-competition="">Todas</button>
-      ${comps.map((c) => `
-        <button type="button" class="filter-chip${this.state.competitionFilter === c.id ? ' is-active' : ''}" data-competition="${c.id}">${c.label}</button>
-      `).join('')}
     `;
   },
 
@@ -208,10 +172,7 @@ const Matches = {
   },
 
   getFilteredFixtures() {
-    return filterFixtures({
-      team: this.state.team,
-      competitionId: this.state.competitionFilter,
-    });
+    return filterFixtures({ team: this.state.team });
   },
 
   renderMatchCard(match) {
@@ -258,17 +219,13 @@ const Matches = {
   },
 
   renderUpcoming() {
-    const fixtures = getUpcomingFixtures({
-      team: this.state.team,
-      competitionId: this.state.competitionFilter,
-    });
+    const fixtures = getUpcomingFixtures({ team: this.state.team });
 
     if (!fixtures.length) {
       return `
         <div class="matches-empty">
           <h2 class="heading-s">No hay partidos próximos</h2>
-          <p class="body-s">Prueba con otro filtro de competición o cambia de equipo.</p>
-          ${this.state.competitionFilter ? '<button type="button" class="btn btn--secondary btn--block" id="match-modal-clear-comp-filter">Quitar filtro de competición</button>' : ''}
+          <p class="body-s">Prueba cambiando de equipo o revisa otras competiciones en la pestaña Competición.</p>
         </div>
       `;
     }
