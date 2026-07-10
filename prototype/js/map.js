@@ -140,6 +140,33 @@ const MapView = {
     });
   },
 
+  /* Activa/desactiva las interacciones — thumbnail (off) vs mapa expandido (on) */
+  setInteractive(on) {
+    if (!this.map) return;
+    const handlers = [
+      'dragging', 'touchZoom', 'doubleClickZoom',
+      'scrollWheelZoom', 'boxZoom', 'keyboard',
+    ];
+    handlers.forEach((h) => {
+      if (this.map[h]) this.map[h][on ? 'enable' : 'disable']();
+    });
+    const zoomCtrl = this.container?.querySelector('.leaflet-control-zoom');
+    if (zoomCtrl) zoomCtrl.style.display = on ? '' : 'none';
+  },
+
+  /* Coloca un único marcador (detalle de sitio) y centra en él */
+  showSingle(venue, zoom = 15) {
+    if (!this.map || !venue) return;
+    this.map.setView([venue.lat, venue.lng], zoom, { animate: false });
+    this.shouldFit = false;
+    if (this.markerLayer) this.markerLayer.clearLayers();
+    const marker = L.marker([venue.lat, venue.lng], {
+      icon: this._createIcon(venue, true),
+    });
+    this.markerLayer.addLayer(marker);
+    this.invalidateSize();
+  },
+
   onMapClick(callback) {
     if (!this.map) return;
     this.map.off('click');

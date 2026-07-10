@@ -58,6 +58,42 @@ const EVENT_TEMPLATES = {
       reserved: 41,
       distRange: { min: 3.5, max: 5.5 },
     },
+    {
+      id: 'geo-4',
+      matchId: 'match-m-clasico',
+      name: 'The Corner Pub — a la vuelta',
+      location: 'Pub deportivo',
+      address: 'A menos de 1 km de ti',
+      category: 'classic',
+      spaceType: 'bar',
+      capacity: 44,
+      reserved: 44,
+      distRange: { min: 0.5, max: 1.4 },
+    },
+    {
+      id: 'geo-5',
+      matchId: 'match-m-clasico',
+      name: 'Casa culé — tu vecindario',
+      location: 'Piso de un aficionado',
+      address: 'A menos de 2 km de ti',
+      category: 'community',
+      spaceType: 'casa',
+      capacity: 16,
+      reserved: 6,
+      distRange: { min: 1.2, max: 2.6 },
+    },
+    {
+      id: 'geo-6',
+      matchId: 'match-m-clasico',
+      name: 'Peña Blaugrana — distrito',
+      location: 'Local de peña',
+      address: 'A menos de 5 km de ti',
+      category: 'pena',
+      spaceType: 'pena',
+      capacity: 70,
+      reserved: 33,
+      distRange: { min: 2.5, max: 4.5 },
+    },
   ],
 
   /* ── Londres ── */
@@ -94,6 +130,50 @@ const EVENT_TEMPLATES = {
       spaceType: 'pena',
       capacity: 85,
       reserved: 68,
+    },
+    {
+      id: 'lon-4',
+      matchId: 'match-m-clasico',
+      name: 'Blaugrana Nights — Soho',
+      location: 'The Blue Posts, Soho',
+      address: '28 Rupert St, W1D 6DJ',
+      category: 'community',
+      spaceType: 'bar',
+      capacity: 50,
+      reserved: 50,
+    },
+    {
+      id: 'lon-5',
+      matchId: 'match-m-clasico',
+      name: 'Culés SE1 — Living Room',
+      location: 'Piso comunitario, Bermondsey',
+      address: '5 Tanner St, SE1 3LE',
+      category: 'community',
+      spaceType: 'casa',
+      capacity: 12,
+      reserved: 5,
+    },
+    {
+      id: 'lon-6',
+      matchId: 'match-m-clasico',
+      name: 'Penya Blaugrana Islington',
+      location: 'Club social, Islington',
+      address: '90 Upper St, N1 0NP',
+      category: 'pena',
+      spaceType: 'pena',
+      capacity: 70,
+      reserved: 33,
+    },
+    {
+      id: 'lon-7',
+      matchId: 'match-m-clasico',
+      name: 'The Culés Tavern — Brixton',
+      location: 'Sports pub, Brixton',
+      address: '410 Coldharbour Ln, SW9 8LF',
+      category: 'classic',
+      spaceType: 'bar',
+      capacity: 55,
+      reserved: 48,
     },
   ],
 
@@ -132,6 +212,39 @@ const EVENT_TEMPLATES = {
       capacity: 30,
       reserved: 18,
     },
+    {
+      id: 'ams-4',
+      matchId: 'match-m-clasico',
+      name: 'Més que un Café — Oost',
+      location: 'Café Blaugrana, Oost',
+      address: 'Javastraat 21, 1094 HB',
+      category: 'community',
+      spaceType: 'bar',
+      capacity: 40,
+      reserved: 40,
+    },
+    {
+      id: 'ams-5',
+      matchId: 'match-m-clasico',
+      name: 'Culés Amsterdam — Living',
+      location: 'Piso comunidad, West',
+      address: 'Jan Evertsenstraat 88, 1056 EG',
+      category: 'community',
+      spaceType: 'casa',
+      capacity: 16,
+      reserved: 6,
+    },
+    {
+      id: 'ams-6',
+      matchId: 'match-m-clasico',
+      name: 'Penya Blaugrana NL',
+      location: 'Sociëteit, Zuid',
+      address: 'Beethovenstraat 21, 1077 HM',
+      category: 'pena',
+      spaceType: 'pena',
+      capacity: 75,
+      reserved: 52,
+    },
   ],
 
   /* ── París ── */
@@ -168,6 +281,39 @@ const EVENT_TEMPLATES = {
       spaceType: 'pena',
       capacity: 70,
       reserved: 55,
+    },
+    {
+      id: 'par-4',
+      matchId: 'match-m-clasico',
+      name: 'Barça Paris — Oberkampf',
+      location: 'Le Pub Blaugrana, Oberkampf',
+      address: '3 Rue Oberkampf, 75011',
+      category: 'classic',
+      spaceType: 'bar',
+      capacity: 55,
+      reserved: 55,
+    },
+    {
+      id: 'par-5',
+      matchId: 'match-m-clasico',
+      name: 'Culés Paris — Salon',
+      location: 'Appartement, Belleville',
+      address: '18 Rue de Belleville, 75020',
+      category: 'community',
+      spaceType: 'casa',
+      capacity: 14,
+      reserved: 9,
+    },
+    {
+      id: 'par-6',
+      matchId: 'match-m-clasico',
+      name: 'Penya Blaugrana Montmartre',
+      location: 'Espace culé, Montmartre',
+      address: '12 Rue des Abbesses, 75018',
+      category: 'pena',
+      spaceType: 'pena',
+      capacity: 65,
+      reserved: 40,
     },
   ],
 };
@@ -262,4 +408,136 @@ function filterEvents(events, { radiusKm, filters, hasGeo }) {
       return true;
     })
     .sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
+}
+
+/* ── Flujo "partido primero" ──
+ * Dado un partido, genera los sitios cercanos donde verlo en la ciudad de demo.
+ * Reutiliza spawnEventsForScenario + haversine para calcular distancias reales
+ * respecto al centro de la ciudad (tratado como "tu zona"). Devuelve la lista
+ * ordenada por cercanía. Si el partido no tiene eventos, devuelve [].
+ */
+/* ── Fotos, valoración y reseñas de local (stock remoto con fallback) ── */
+const VENUE_PHOTOS = {
+  bar: [
+    'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1538488881038-e252a119ace7?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=640&q=60&auto=format&fit=crop',
+  ],
+  casa: [
+    'https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=640&q=60&auto=format&fit=crop',
+  ],
+  pena: [
+    'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1543007630-9710e4a00a20?w=640&q=60&auto=format&fit=crop',
+  ],
+};
+
+const REVIEW_POOL = [
+  { name: 'Marc', initials: 'M', text: 'Ambientazo culé, se vive cada gol como en el Camp Nou.' },
+  { name: 'Laura', initials: 'L', text: 'Gente muy maja y buena pantalla. Repetiré seguro.' },
+  { name: 'Oty', initials: 'O', text: 'Llegué sin conocer a nadie y acabé celebrando con todos.' },
+  { name: 'Jordi', initials: 'J', text: 'Buen sitio, aunque se llena rápido. Reserva con tiempo.' },
+  { name: 'Sara', initials: 'S', text: 'El host se curra el ambiente. Cervezas frías y visca Barça.' },
+  { name: 'Luis', initials: 'L', text: 'Perfecto para ver el clásico si estás lejos de casa.' },
+  { name: 'Nadia', initials: 'N', text: 'Sonido un pelín alto, pero la energía lo compensa.' },
+  { name: 'Pau', initials: 'P', text: 'Comunidad auténtica, nada de postureo. 10/10.' },
+  { name: 'Íker', initials: 'Í', text: 'Tele grande y cañas a buen precio. Muy recomendable.' },
+  { name: 'Carla', initials: 'C', text: 'Fui con mi hermano y encajamos al momento. Volveremos.' },
+  { name: 'Dani', initials: 'D', text: 'Un poco justo de sitio en partido grande: llega pronto.' },
+  { name: 'Aina', initials: 'A', text: 'Ambiente familiar y muy culé. Perfecto para el clásico.' },
+];
+
+const REVIEW_DATES = ['hace 3 días', 'hace 1 semana', 'hace 2 semanas', 'hace 1 mes', 'hace 2 meses'];
+
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+/* Asigna foto/valoración/reseñas de forma estable a partir del id del sitio */
+function enrichVenue(v) {
+  const h = hashStr(v.id);
+  const photos = VENUE_PHOTOS[v.spaceType] || VENUE_PHOTOS.bar;
+  const image = photos[h % photos.length];
+  const rating = Math.round((3.9 + (h % 12) / 10) * 10) / 10; // 3.9 – 5.0
+  const reviewCount = 18 + (h % 230);
+  const reviews = [0, 1, 2].map((i) => {
+    const p = REVIEW_POOL[(h + i * 3) % REVIEW_POOL.length];
+    const r = Math.max(3, Math.min(5, Math.round(rating) - (i === 2 ? 1 : 0)));
+    return { name: p.name, initials: p.initials, text: p.text, rating: r, date: REVIEW_DATES[(h + i) % REVIEW_DATES.length] };
+  });
+  return { ...v, image, rating, reviewCount, reviews };
+}
+
+/**
+ * Genera los sitios cercanos donde ver un partido según el contexto de búsqueda.
+ * @param {object} match     - partido seleccionado (summary)
+ * @param {object} [search]  - { hasGeo, cityKey, center } (por defecto Londres)
+ */
+function buildVenuesForMatch(match, search) {
+  const hasGeo = !!(search && search.hasGeo);
+  const cityKey = (search && search.cityKey) || 'london';
+  let center = search && search.center;
+  if (!center) {
+    const c = CITIES[cityKey] || CITIES.london;
+    center = { lat: c.lat, lng: c.lng };
+  }
+  const venues = spawnEventsForScenario(hasGeo, cityKey, center, match, true);
+  return venues
+    .map((v) => enrichVenue({
+      ...v,
+      distanceKm:
+        v.distanceKm !== undefined
+          ? v.distanceKm
+          : haversineKm(center.lat, center.lng, v.lat, v.lng),
+    }))
+    .sort((a, b) => a.distanceKm - b.distanceKm);
+}
+
+const SPACE_TYPE_LABELS = {
+  bar: 'Bar / local',
+  casa: 'Casa',
+  pena: 'Peña',
+};
+
+const VENUE_SORTS = {
+  distance: 'Cercanía',
+  rating: 'Valoración',
+  availability: 'Plazas libres',
+};
+
+/* Filtra la lista de sitios de un partido según los criterios de la toolbar */
+function filterVenues(venues, { spaceType = [], hideFull = false, minRating = 0 } = {}) {
+  return venues.filter((v) => {
+    if (spaceType.length && !spaceType.includes(v.spaceType)) return false;
+    if (hideFull && v.reserved >= v.capacity) return false;
+    if (minRating && (v.rating || 0) < minRating) return false;
+    return true;
+  });
+}
+
+/* Ordena la lista de sitios; la cercanía es el desempate por defecto */
+function sortVenues(venues, sortBy = 'distance') {
+  const arr = [...venues];
+  if (sortBy === 'rating') {
+    arr.sort((a, b) => (b.rating || 0) - (a.rating || 0) || a.distanceKm - b.distanceKm);
+  } else if (sortBy === 'availability') {
+    arr.sort((a, b) => (b.capacity - b.reserved) - (a.capacity - a.reserved) || a.distanceKm - b.distanceKm);
+  } else {
+    arr.sort((a, b) => a.distanceKm - b.distanceKm);
+  }
+  return arr;
+}
+
+/* ── Tickets / entradas ── */
+let _ticketSeq = 0;
+
+function generateTicketCode() {
+  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const letter = letters[Math.floor(Math.random() * letters.length)];
+  const num = String(10 + Math.floor(Math.random() * 89)); // 2 dígitos
+  _ticketSeq += 1;
+  return `${letter}${num}`;
 }

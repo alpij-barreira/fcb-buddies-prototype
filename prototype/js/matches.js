@@ -1,15 +1,12 @@
-/* HdU2 — Explorar partidos */
+/* Home — El partido es el protagonista (feed + filtros integrados + calendario) */
 
-const Matches = {
+const Home = {
   state: {
     team: 'men',
-    tab: 'upcoming',
+    competition: null,       // null = todas las competiciones
+    filterDraft: null,       // borrador del sheet de filtro
     calendarMonth: new Date(DEMO_TODAY.getFullYear(), DEMO_TODAY.getMonth(), 1),
     selectedDay: null,
-    selectedCompetitionTab: null,
-    modalMatch: null,
-    eventsLoadError: false,
-    calendarLoadError: false,
   },
 
   els: {},
@@ -17,271 +14,312 @@ const Matches = {
   init() {
     this.cacheElements();
     this.bindEvents();
-    this.renderTeamToggle();
-    this.renderTabs();
     this.render();
+    this.updateFilterLabel();
   },
 
   cacheElements() {
-    const ids = [
-      'screen-matches',
-      'matches-team-toggle',
-      'matches-tabs',
-      'matches-tab-upcoming',
-      'matches-tab-competition',
-      'matches-tab-calendar',
-      'matches-content',
-      'match-modal-overlay',
-      'match-modal',
-      'match-modal-content',
-    ];
-    ids.forEach((id) => {
-      this.els[id] = document.getElementById(id);
-    });
+    [
+      'home-content', 'home-filter-btn', 'home-filter-label', 'home-calendar-btn',
+      'home-filter-overlay', 'home-filter-sheet', 'home-filter-content',
+      'calendar-overlay', 'calendar-sheet', 'calendar-content',
+    ].forEach((id) => { this.els[id] = document.getElementById(id); });
   },
 
   bindEvents() {
-    this.els['match-modal-overlay']?.addEventListener('click', () => this.closeModal());
+    this.els['home-filter-btn']?.addEventListener('click', () => this.openFilters());
+    this.els['home-calendar-btn']?.addEventListener('click', () => this.openCalendar());
 
-    // Acciones del modal — está fuera de matches-content, requiere listener propio
-    this.els['match-modal']?.addEventListener('click', (e) => {
-      if (e.target.closest('[data-modal-action="close"]')) { this.closeModal(); return; }
-      if (e.target.closest('[data-modal-action="search"]')) { this.searchEventsWithMatch(); return; }
-      if (e.target.closest('[data-modal-action="explore-nearby"]')) { this.exploreNearby(); return; }
-      if (e.target.closest('[data-modal-action="retry-events"]')) {
-        this.state.eventsLoadError = false;
-        this.renderModal();
-        return;
-      }
-    });
+    this.els['home-filter-overlay']?.addEventListener('click', () => this.closeFilters());
+    this.els['home-filter-content']?.addEventListener('click', (e) => this.handleFilterClick(e));
 
-    this.els['matches-tabs']?.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-matches-tab]');
-      if (!btn) return;
-      this.state.tab = btn.dataset.matchesTab;
-      this.renderTabs();
-      this.render();
-    });
+    this.els['calendar-overlay']?.addEventListener('click', () => this.closeCalendar());
+    this.els['calendar-content']?.addEventListener('click', (e) => this.handleCalendarClick(e));
 
-    this.els['matches-team-toggle']?.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-team]');
-      if (!btn) return;
-      this.state.team = btn.dataset.team;
-      this.state.selectedCompetitionTab = null;
-      this.state.selectedDay = null;
-      this.renderTeamToggle();
-      this.render();
-    });
-
-    this.els['matches-content']?.addEventListener('click', (e) => {
+    this.els['home-content']?.addEventListener('click', (e) => {
       const card = e.target.closest('[data-match-id]');
-      if (card) {
-        this.openModal(card.dataset.matchId);
-        return;
-      }
-      const dayBtn = e.target.closest('[data-cal-day]');
-      if (dayBtn) {
-        this.state.selectedDay = dayBtn.dataset.calDay;
+      if (card) { App.openMatchDetail(card.dataset.matchId); return; }
+      if (e.target.closest('[data-clear-home-filter]')) {
+        this.state.competition = null;
         this.render();
-        return;
-      }
-      const navBtn = e.target.closest('[data-cal-nav]');
-      if (navBtn) {
-        const dir = Number(navBtn.dataset.calNav);
-        const m = this.state.calendarMonth;
-        this.state.calendarMonth = new Date(m.getFullYear(), m.getMonth() + dir, 1);
-        this.state.selectedDay = null;
-        this.render();
-        return;
-      }
-      const compBtn = e.target.closest('[data-comp-tab]');
-      if (compBtn) {
-        this.state.selectedCompetitionTab = compBtn.dataset.compTab;
-        this.render();
-        return;
-      }
-      if (e.target.closest('#matches-retry-calendar')) {
-        this.state.calendarLoadError = false;
-        this.render();
+        this.updateFilterLabel();
       }
     });
   },
 
   show() {
-    if (App.state.selectedMatch?.team) {
-      this.state.team = App.state.selectedMatch.team === 'women' ? 'women' : 'men';
-    }
-    this.state.calendarMonth = new Date(DEMO_TODAY.getFullYear(), DEMO_TODAY.getMonth(), 1);
-    this.renderTeamToggle();
-    this.renderTabs();
     this.render();
+    this.updateFilterLabel();
   },
 
-  renderTeamToggle() {
-    const el = this.els['matches-team-toggle'];
-    if (!el) return;
-    const label = this.state.team === 'men' ? 'Primer equipo' : 'FC Barcelona Femení';
-    el.innerHTML = `
-      <span class="matches-team-toggle__label">${label}</span>
-      <div class="segmented-control" role="group" aria-label="Equipo">
-        <button type="button" class="segmented-control__btn${this.state.team === 'men' ? ' is-active' : ''}" data-team="men">Masculino</button>
-        <button type="button" class="segmented-control__btn${this.state.team === 'women' ? ' is-active' : ''}" data-team="women">Femenino</button>
-      </div>
+  scrollTop() {
+    if (this.els['home-content']) this.els['home-content'].scrollTop = 0;
+  },
+
+  /* ============================ Feed ============================ */
+
+  getFixtures() {
+    let fx = getUpcomingFixtures({ team: this.state.team });
+    if (this.state.competition) fx = fx.filter((f) => f.competitionId === this.state.competition);
+    return fx;
+  },
+
+  socialProof(match) {
+    if (!matchHasEvents(match)) {
+      return `<span class="match-feed-card__social">Aún sin sitios</span>`;
+    }
+    return `
+      <span class="match-feed-card__social match-feed-card__social--yes">
+        <span class="match-feed-card__dot" aria-hidden="true"></span>
+        ${match.eventCount} sitio${match.eventCount !== 1 ? 's' : ''} cerca
+      </span>
     `;
   },
 
-  renderTabs() {
-    const el = this.els['matches-tabs'];
-    if (!el) return;
-    const tabs = [
-      { id: 'upcoming', label: 'Próximos' },
-      { id: 'competition', label: 'Competición' },
-      { id: 'calendar', label: 'Calendario' },
-    ];
-    el.innerHTML = tabs
-      .map(
-        (t) => `
-      <button type="button" class="tab-btn${this.state.tab === t.id ? ' is-active' : ''}" data-matches-tab="${t.id}" role="tab" aria-selected="${this.state.tab === t.id}">
-        ${t.label}
+  renderHero(match) {
+    const comp = COMPETITIONS[match.competitionId].label;
+    const teamTag = match.team === 'women' ? 'Femení' : 'Masculino';
+    const datetime = formatMatchDatetime(match);
+    return `
+      <button type="button" class="home-hero" data-match-id="${match.id}">
+        <span class="home-hero__flag">Partido destacado</span>
+        <div class="home-hero__teams">
+          ${crestHtml(match.home, match.homeAbbr, 'barca', 'width:56px;height:56px;font-size:14px')}
+          <span class="home-hero__vs">VS</span>
+          ${crestHtml(match.away, match.awayAbbr, 'rival', 'width:56px;height:56px;font-size:14px')}
+        </div>
+        <div class="home-hero__names">
+          <span>${match.home}</span>
+          <span class="home-hero__vs-mini">·</span>
+          <span>${match.away}</span>
+        </div>
+        <div class="home-hero__comp">${comp} · ${teamTag}</div>
+        <div class="home-hero__datetime">${datetime}</div>
+        <div class="home-hero__footer">
+          ${this.socialProof(match)}
+          <span class="home-hero__cta">Ver dónde verlo</span>
+        </div>
       </button>
-    `
-      )
-      .join('');
+    `;
   },
 
-  render() {
-    const content = this.els['matches-content'];
-    if (!content) return;
-
-    if (this.state.calendarLoadError && this.state.tab === 'calendar') {
-      content.innerHTML = this.renderCalendarError();
-      return;
-    }
-
-    switch (this.state.tab) {
-      case 'upcoming':
-        content.innerHTML = this.renderUpcoming();
-        break;
-      case 'competition':
-        content.innerHTML = this.renderCompetitionTab();
-        break;
-      case 'calendar':
-        content.innerHTML = this.renderCalendarTab();
-        break;
-    }
-  },
-
-  getFilteredFixtures() {
-    return filterFixtures({ team: this.state.team });
-  },
-
-  renderMatchCard(match) {
-    const eventsBadge = matchHasEvents(match)
-      ? `<span class="match-fixture-card__events match-fixture-card__events--yes">${match.eventCount} evento${match.eventCount !== 1 ? 's' : ''}</span>`
-      : `<span class="match-fixture-card__events">Sin eventos</span>`;
+  renderFeedCard(match) {
+    const comp = COMPETITIONS[match.competitionId].label;
+    const timeLabel =
+      match.status === 'tbc' || !match.time ? 'Hora por confirmar' : formatMatchDatetime(match);
 
     const statusHtml =
       match.status === 'postponed'
         ? `<span class="match-fixture-card__status match-fixture-card__status--warn">Aplazado</span>`
         : match.status === 'cancelled'
           ? `<span class="match-fixture-card__status match-fixture-card__status--danger">Cancelado</span>`
-          : match.status === 'tbc'
-            ? `<span class="match-fixture-card__status">Hora por confirmar</span>`
-            : '';
-
-    const timeLabel =
-      match.status === 'tbc' || !match.time ? 'Por confirmar' : match.time;
+          : '';
 
     return `
-      <article class="match-fixture-card" data-match-id="${match.id}" role="button" tabindex="0">
-        <div class="match-fixture-card__header">
-          <span class="overline">${COMPETITIONS[match.competitionId].label}</span>
-          ${eventsBadge}
+      <article class="match-feed-card" data-match-id="${match.id}" role="button" tabindex="0">
+        <div class="match-feed-card__top">
+          <span class="overline">${comp}</span>
+          ${this.socialProof(match)}
         </div>
-        <div class="match-fixture-card__teams">
-          <div class="match-fixture-card__team">
-            ${crestHtml(match.home, match.homeAbbr, 'barca')}
-            <span class="body-s">${match.home}</span>
+        <div class="match-feed-card__teams">
+          <div class="mfc-team">
+            ${crestHtml(match.home, match.homeAbbr, 'barca', 'width:40px;height:40px;font-size:12px')}
+            <span class="mfc-team__name">${match.home}</span>
           </div>
-          <span class="match-fixture-card__vs">vs</span>
-          <div class="match-fixture-card__team">
-            ${crestHtml(match.away, match.awayAbbr, 'rival')}
-            <span class="body-s">${match.away}</span>
+          <span class="match-feed-card__vs">VS</span>
+          <div class="mfc-team">
+            ${crestHtml(match.away, match.awayAbbr, 'rival', 'width:40px;height:40px;font-size:12px')}
+            <span class="mfc-team__name">${match.away}</span>
           </div>
         </div>
-        <div class="match-fixture-card__meta">
-          <span class="caption">${match.round}</span>
-          <span class="caption">${timeLabel}</span>
+        <div class="match-feed-card__bottom">
+          <span class="match-feed-card__datetime">${timeLabel}</span>
+          <span class="match-feed-card__go">Ver ›</span>
         </div>
         ${statusHtml}
       </article>
     `;
   },
 
-  renderUpcoming() {
-    const fixtures = getUpcomingFixtures({ team: this.state.team });
-
-    if (!fixtures.length) {
-      return `
-        <div class="matches-empty">
-          <h2 class="heading-s">No hay partidos próximos</h2>
-          <p class="body-s">Prueba cambiando de equipo o revisa otras competiciones en la pestaña Competición.</p>
-        </div>
-      `;
-    }
-
-    let lastDate = '';
-    let html = '<div class="matches-list">';
-    fixtures.forEach((match) => {
-      if (match.date !== lastDate) {
-        lastDate = match.date;
-        html += `<h2 class="matches-date-separator">${formatDateSeparator(match.date)}</h2>`;
-      }
-      html += this.renderMatchCard(match);
-    });
-    html += '</div>';
-    return html;
+  pickFeatured(fixtures) {
+    const withEvents = fixtures.filter((f) => matchHasEvents(f));
+    if (!withEvents.length) return null;
+    return withEvents.reduce((best, f) => (f.eventCount > best.eventCount ? f : best), withEvents[0]);
   },
 
-  renderCompetitionTab() {
-    const comps = getCompetitionsForTeam(this.state.team);
-    const selected = this.state.selectedCompetitionTab || comps[0]?.id;
+  render() {
+    const content = this.els['home-content'];
+    if (!content) return;
 
-    const fixtures = filterFixtures({
-      team: this.state.team,
-      competitionId: selected,
-    });
+    const fixtures = this.getFixtures();
 
-    return `
-      <div class="matches-competition-picker">
-        ${comps.map((c) => `
-          <button type="button" class="filter-chip${selected === c.id ? ' is-active' : ''}" data-comp-tab="${c.id}">${c.label}</button>
-        `).join('')}
-      </div>
-      ${fixtures.length ? `
-        <div class="matches-list">
-          ${fixtures.map((m) => this.renderMatchCard(m)).join('')}
-        </div>
-      ` : `
+    if (!fixtures.length) {
+      content.innerHTML = `
         <div class="matches-empty">
-          <h2 class="heading-s">Sin partidos en esta competición</h2>
-          <p class="body-s">No hay partidos programados para ${COMPETITIONS[selected].label} del ${this.state.team === 'men' ? 'primer equipo' : 'equipo femenino'}.</p>
-          <button type="button" class="btn btn--secondary btn--block" data-comp-tab="${comps[0]?.id || ''}">Ver otra competición</button>
+          <h2 class="heading-s">No hay partidos con este filtro</h2>
+          <p class="body-s">Prueba con otra competición o revisa el calendario completo.</p>
+          ${this.state.competition ? '<button type="button" class="btn btn--secondary" data-clear-home-filter style="margin-top:var(--space-3)">Quitar filtro de competición</button>' : ''}
         </div>
-      `}
+      `;
+      return;
+    }
+
+    const featured = this.pickFeatured(fixtures);
+    const rest = featured ? fixtures.filter((f) => f.id !== featured.id) : fixtures;
+
+    let html = featured ? this.renderHero(featured) : '';
+    html += '<h2 class="home-section-title">Próximos partidos</h2>';
+
+    let lastDate = '';
+    html += '<div class="matches-list">';
+    rest.forEach((match) => {
+      if (match.date !== lastDate) {
+        lastDate = match.date;
+        html += `<h3 class="matches-date-separator">${formatDateSeparator(match.date)}</h3>`;
+      }
+      html += this.renderFeedCard(match);
+    });
+    html += '</div>';
+    content.innerHTML = html;
+  },
+
+  updateFilterLabel() {
+    const el = this.els['home-filter-label'];
+    if (!el) return;
+    const teamLbl = this.state.team === 'men' ? 'Masculino' : 'Femenino';
+    const compLbl = this.state.competition ? COMPETITIONS[this.state.competition].label : 'Todas';
+    el.textContent = `${teamLbl} · ${compLbl}`;
+  },
+
+  /* ============================ Sheet de filtro (equipo + competición) ============================ */
+
+  openFilters() {
+    this.state.filterDraft = { team: this.state.team, competition: this.state.competition };
+    this.renderFilters();
+    this.els['home-filter-overlay'].classList.add('is-open');
+    this.els['home-filter-sheet'].classList.add('is-open');
+  },
+
+  closeFilters() {
+    this.els['home-filter-overlay'].classList.remove('is-open');
+    this.els['home-filter-sheet'].classList.remove('is-open');
+  },
+
+  renderFilters() {
+    const d = this.state.filterDraft;
+    const comps = getCompetitionsForTeam(d.team);
+    this.els['home-filter-content'].innerHTML = `
+      <div class="filter-sheet__header">
+        <h2 class="filter-sheet__title" id="home-filter-title">Filtrar partidos</h2>
+        <button type="button" class="filter-sheet__clear" data-filter-action="clear">Limpiar</button>
+      </div>
+
+      <div class="filter-group">
+        <h3 class="filter-group__title">Equipo</h3>
+        <div class="segmented-control" role="group" aria-label="Equipo">
+          <button type="button" class="segmented-control__btn${d.team === 'men' ? ' is-active' : ''}" data-team="men">Masculino</button>
+          <button type="button" class="segmented-control__btn${d.team === 'women' ? ' is-active' : ''}" data-team="women">Femenino</button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <h3 class="filter-group__title">Competición</h3>
+        <div class="filter-chips">
+          <button type="button" class="filter-chip${!d.competition ? ' is-active' : ''}" data-comp="">Todas</button>
+          ${comps.map((c) => `
+            <button type="button" class="filter-chip${d.competition === c.id ? ' is-active' : ''}" data-comp="${c.id}">${c.label}</button>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="filter-sheet__footer">
+        <button type="button" class="btn btn--primary btn--block" data-filter-action="apply">Ver partidos</button>
+        <button type="button" class="btn btn--ghost btn--block" data-filter-action="close" style="margin-top: var(--space-3)">Cerrar</button>
+      </div>
     `;
   },
 
-  renderCalendarTab() {
+  handleFilterClick(e) {
+    const d = this.state.filterDraft;
+    if (!d) return;
+    const action = e.target.closest('[data-filter-action]')?.dataset.filterAction;
+    if (action === 'close') { this.closeFilters(); return; }
+    if (action === 'clear') {
+      d.competition = null;
+      this.renderFilters();
+      return;
+    }
+    if (action === 'apply') {
+      this.state.team = d.team;
+      this.state.competition = d.competition;
+      this.closeFilters();
+      this.render();
+      this.updateFilterLabel();
+      this.scrollTop();
+      return;
+    }
+
+    const team = e.target.closest('[data-team]')?.dataset.team;
+    if (team) {
+      d.team = team;
+      d.competition = null; // las competiciones dependen del equipo
+      this.renderFilters();
+      return;
+    }
+
+    const comp = e.target.closest('[data-comp]');
+    if (comp) {
+      d.competition = comp.dataset.comp || null;
+      this.renderFilters();
+    }
+  },
+
+  /* ============================ Calendario (overlay) ============================ */
+
+  openCalendar() {
+    this.state.calendarMonth = new Date(DEMO_TODAY.getFullYear(), DEMO_TODAY.getMonth(), 1);
+    this.state.selectedDay = null;
+    this.renderCalendar();
+    this.els['calendar-overlay'].classList.add('is-open');
+    this.els['calendar-sheet'].classList.add('is-open');
+  },
+
+  closeCalendar() {
+    this.els['calendar-overlay'].classList.remove('is-open');
+    this.els['calendar-sheet'].classList.remove('is-open');
+  },
+
+  handleCalendarClick(e) {
+    if (e.target.closest('[data-calendar-close]')) { this.closeCalendar(); return; }
+
+    const card = e.target.closest('[data-match-id]');
+    if (card) { this.closeCalendar(); App.openMatchDetail(card.dataset.matchId); return; }
+
+    const dayBtn = e.target.closest('[data-cal-day]');
+    if (dayBtn) { this.state.selectedDay = dayBtn.dataset.calDay; this.renderCalendar(); return; }
+
+    const navBtn = e.target.closest('[data-cal-nav]');
+    if (navBtn) {
+      const dir = Number(navBtn.dataset.calNav);
+      const m = this.state.calendarMonth;
+      this.state.calendarMonth = new Date(m.getFullYear(), m.getMonth() + dir, 1);
+      this.state.selectedDay = null;
+      this.renderCalendar();
+    }
+  },
+
+  renderCalendar() {
     const year = this.state.calendarMonth.getFullYear();
     const month = this.state.calendarMonth.getMonth();
     const monthLabel = `${MONTHS_ES[month]} ${year}`;
+    const teamLbl = this.state.team === 'men' ? 'primer equipo' : 'equipo femenino';
 
     const firstDay = new Date(year, month, 1);
     const startPad = (firstDay.getDay() + 6) % 7;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    const fixtures = this.getFilteredFixtures();
+    // El calendario da visión global: todos los partidos del equipo seleccionado
+    const fixtures = filterFixtures({ team: this.state.team });
     const matchDays = new Set(fixtures.map((f) => f.date));
 
     let cells = '';
@@ -306,7 +344,13 @@ const Matches = {
       ? fixtures.filter((f) => f.date === this.state.selectedDay)
       : [];
 
-    return `
+    this.els['calendar-content'].innerHTML = `
+      <div class="filter-sheet__header">
+        <h2 class="filter-sheet__title" id="calendar-title">Calendario · ${teamLbl}</h2>
+        <button type="button" class="access-sheet__close" data-calendar-close aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
       <div class="calendar">
         <div class="calendar__nav">
           <button type="button" class="icon-btn" data-cal-nav="-1" aria-label="Mes anterior">
@@ -324,125 +368,12 @@ const Matches = {
       </div>
       ${this.state.selectedDay ? `
         <div class="calendar__day-matches">
-          <h2 class="matches-date-separator">${formatDateSeparator(this.state.selectedDay)}</h2>
+          <h3 class="matches-date-separator">${formatDateSeparator(this.state.selectedDay)}</h3>
           ${dayFixtures.length
-            ? dayFixtures.map((m) => this.renderMatchCard(m)).join('')
+            ? dayFixtures.map((m) => this.renderFeedCard(m)).join('')
             : '<p class="body-s" style="color: var(--content-secondary); padding: var(--space-4) 0">No hay partidos este día.</p>'}
         </div>
-      ` : '<p class="caption calendar__hint">Selecciona un día con partido</p>'}
+      ` : '<p class="caption calendar__hint">Selecciona un día con partido para ver los detalles</p>'}
     `;
-  },
-
-  renderCalendarError() {
-    return `
-      <div class="matches-empty">
-        <h2 class="heading-s">No se pudo cargar el calendario</h2>
-        <p class="body-s">Comprueba tu conexión e inténtalo de nuevo.</p>
-        <button type="button" class="btn btn--secondary btn--block" id="matches-retry-calendar">Reintentar</button>
-      </div>
-    `;
-  },
-
-  openModal(matchId) {
-    const raw = FIXTURES.find((f) => f.id === matchId);
-    if (!raw) return;
-    this.state.modalMatch = raw;
-    this.state.eventsLoadError = false;
-    this.els['match-modal-overlay'].classList.add('is-open');
-    this.els['match-modal'].classList.add('is-open');
-    this.renderModal();
-  },
-
-  closeModal() {
-    this.state.modalMatch = null;
-    this.els['match-modal-overlay'].classList.remove('is-open');
-    this.els['match-modal'].classList.remove('is-open');
-  },
-
-  renderModal() {
-    const match = this.state.modalMatch;
-    const content = this.els['match-modal-content'];
-    if (!match || !content) return;
-
-    const comp = COMPETITIONS[match.competitionId].label;
-    const teamLabel = match.team === 'men' ? 'Primer equipo' : 'FC Barcelona Femení';
-    const datetime = formatMatchDatetime(match);
-
-    let statusBlock = '';
-    if (match.status === 'postponed') {
-      statusBlock = `<p class="alert alert--info">${match.statusNote || 'Partido aplazado'}</p>`;
-    } else if (match.status === 'cancelled') {
-      statusBlock = `<p class="alert alert--info" style="border-color: var(--grana-200); background: var(--grana-50); color: var(--grana-700)">${match.statusNote || 'Partido cancelado'}</p>`;
-    }
-
-    let eventsBlock = '';
-    if (this.state.eventsLoadError) {
-      eventsBlock = `
-        <div class="matches-empty" style="padding: var(--space-4) 0">
-          <p class="body-s">No pudimos cargar los eventos asociados.</p>
-          <button type="button" class="btn btn--ghost btn--block" data-modal-action="retry-events">Reintentar</button>
-        </div>
-      `;
-    } else if (matchHasEvents(match)) {
-      eventsBlock = `
-        <p class="body-m" style="margin-bottom: var(--space-4)">
-          <strong>${match.eventCount}</strong> evento${match.eventCount !== 1 ? 's' : ''} disponible${match.eventCount !== 1 ? 's' : ''} para ver este partido en compañía.
-        </p>
-        <button type="button" class="btn btn--primary btn--block" data-modal-action="search">Buscar eventos con este partido</button>
-      `;
-    } else {
-      eventsBlock = `
-        <p class="body-m" style="color: var(--content-secondary); margin-bottom: var(--space-4)">
-          Todavía no hay eventos de la comunidad para este partido.
-        </p>
-        <button type="button" class="btn btn--secondary btn--block" data-modal-action="explore-nearby">Buscar eventos cercanos</button>
-        <button type="button" class="btn btn--ghost btn--block" data-modal-action="close" style="margin-top: var(--space-3)">Seguir explorando partidos</button>
-      `;
-    }
-
-    const actionsBlock =
-      match.status === 'postponed' || match.status === 'cancelled'
-        ? `<button type="button" class="btn btn--ghost btn--block" data-modal-action="close">Cerrar</button>`
-        : eventsBlock;
-
-    content.innerHTML = `
-      <div class="match-modal__header">
-        <span class="overline">${comp} · ${teamLabel}</span>
-        <button type="button" class="event-panel__close" data-modal-action="close" aria-label="Cerrar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div class="match-modal__teams">
-        <div class="match-modal__team">
-          ${crestHtml(match.home, match.homeAbbr, 'barca', 'width:40px;height:40px;font-size:12px')}
-          <span class="heading-s">${match.home}</span>
-        </div>
-        <span class="match-fixture-card__vs">vs</span>
-        <div class="match-modal__team">
-          ${crestHtml(match.away, match.awayAbbr, 'rival', 'width:40px;height:40px;font-size:12px')}
-          <span class="heading-s">${match.away}</span>
-        </div>
-      </div>
-      <dl class="match-modal__details">
-        <div><dt>Fecha y hora</dt><dd>${datetime}</dd></div>
-        <div><dt>${match.round.includes('Jornada') ? 'Jornada' : 'Fase'}</dt><dd>${match.round}</dd></div>
-        <div><dt>Estadio</dt><dd>${match.venue}</dd></div>
-      </dl>
-      ${statusBlock}
-      <div class="match-modal__actions">${actionsBlock}</div>
-    `;
-  },
-
-  searchEventsWithMatch() {
-    const summary = matchToSummary(this.state.modalMatch);
-    App.applySelectedMatch(summary, { filterByMatch: true });
-    this.closeModal();
-    App.showMainTab('discover');
-  },
-
-  exploreNearby() {
-    App.applySelectedMatch(App.state.selectedMatch, { filterByMatch: false });
-    this.closeModal();
-    App.showMainTab('discover');
   },
 };

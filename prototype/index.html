@@ -3,206 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Barça Buddies — Descubrir eventos</title>
-  <link rel="stylesheet" href="css/tokens.css">
-  <link rel="stylesheet" href="css/styles.css">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080b1a">
+  <title>Barça Buddies — Vive el partido en compañía</title>
+  <link rel="stylesheet" href="css/tokens.css?v=3">
+  <link rel="stylesheet" href="css/styles.css?v=3">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 </head>
 <body>
   <div id="app">
 
-    <!-- 1. Solicitud de geolocalización -->
-    <section id="screen-geo-prompt" class="screen screen--centered is-active" aria-label="Activar ubicación">
-      <img class="geo-prompt__logo" src="assets/Logo_azul.png" alt="Barça Buddies" width="96" height="96">
-      <h1 class="heading-l geo-prompt__title">Encuentra culés cerca</h1>
-      <p class="body-m geo-prompt__text">Activa tu ubicación para descubrir eventos del Barça en tu zona.</p>
-      <div class="btn-group">
-        <button type="button" class="btn btn--primary btn--block" id="btn-geo-yes">Activar ubicación</button>
-        <button type="button" class="btn btn--ghost btn--block" id="btn-geo-no">Introducir ciudad manualmente</button>
-      </div>
-    </section>
-
-    <!-- 2. Introducción manual de ciudad -->
-    <section id="screen-manual-location" class="screen screen--centered" aria-label="Buscar ciudad">
-      <h1 class="heading-l" style="margin-bottom: var(--space-2)">¿Dónde quieres explorar?</h1>
-      <p class="body-m" style="color: var(--content-secondary); margin-bottom: var(--space-6); max-width: 300px;">
-        Introduce una ciudad o zona para ver eventos cercanos.
-      </p>
-      <div class="field" style="max-width: 320px; margin-bottom: var(--space-5)">
-        <label class="field__label" for="manual-city-input">Ciudad o zona</label>
-        <div class="field__input-wrap">
-          <svg class="field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="manual-city-input" class="field__input" placeholder="Ej. Londres" autocomplete="off">
+    <!-- ===================== HOME · Feed de partidos ===================== -->
+    <section id="screen-home" class="screen screen-home is-active" aria-label="Partidos">
+      <header class="app-header">
+        <div class="app-header__brand">
+          <img class="app-header__logo" src="assets/Logo_azul.png" alt="" width="30" height="30">
+          <span class="app-header__title">Barça Buddies</span>
         </div>
-        <p class="field__error" id="manual-city-error" hidden>No encontramos esa ciudad. Prueba con Londres, Ámsterdam o París.</p>
-        <p class="field__helper">Londres · Ámsterdam · París</p>
-      </div>
-      <button type="button" class="btn btn--primary btn--block" id="btn-manual-submit" style="max-width: 320px">Explorar eventos</button>
-    </section>
-
-    <!-- 3. Error de geolocalización -->
-    <section id="screen-geo-error" class="screen screen--centered" aria-label="Error de ubicación">
-      <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-      <h1 class="heading-l" style="margin-bottom: var(--space-2)">No pudimos obtener tu ubicación</h1>
-      <p class="body-m" style="color: var(--content-secondary); margin-bottom: var(--space-6); max-width: 300px;">
-        Comprueba los permisos de ubicación o busca una ciudad manualmente.
-      </p>
-      <div class="btn-group" style="max-width: 320px">
-        <button type="button" class="btn btn--secondary btn--block" id="btn-geo-retry">Volver a intentarlo</button>
-        <button type="button" class="btn btn--primary btn--block" id="btn-geo-demo">Continuar con demo</button>
-        <button type="button" class="btn btn--ghost btn--block" id="btn-geo-search">Buscar una ubicación</button>
-      </div>
-    </section>
-
-    <!-- 4. Carga -->
-    <section id="screen-loading" class="screen screen--centered" aria-label="Cargando" aria-live="polite">
-      <div class="loading">
-        <div class="spinner" role="status" aria-label="Cargando"></div>
-        <p class="body-m" id="loading-message">Cargando eventos…</p>
-      </div>
-    </section>
-
-    <!-- 5. Pantalla principal — Descubrir -->
-    <section id="screen-discover" class="screen discover" aria-label="Descubrir eventos">
-      <header class="discover__header">
-        <div class="discover__search-row">
-          <div class="discover__search">
-            <svg class="discover__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input type="text" id="search-input" placeholder="Buscar ciudad o zona" aria-label="Buscar ciudad o zona">
-          </div>
-          <button type="button" class="icon-btn" id="btn-filters" aria-label="Filtros">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-            <span class="filter-badge" id="filter-badge" hidden>0</span>
-          </button>
-        </div>
-        <p class="field__error" id="search-error" hidden style="margin-top: calc(-1 * var(--space-2))"></p>
-
-        <!-- Tarjeta partido — abre pantalla Partidos (HdU2) -->
-        <button type="button" id="match-card" class="match-card" aria-label="Ver partidos"></button>
-
-        <div class="radius-control" id="radius-control">
-          <span class="radius-control__label">Radio</span>
-          <input type="range" id="radius-slider" min="1" max="30" value="5" aria-label="Radio de búsqueda en kilómetros">
-          <span class="radius-control__value" id="radius-value">5 km</span>
-        </div>
+        <button type="button" class="app-header__profile" id="btn-profile" aria-label="Tu perfil">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+        </button>
       </header>
-
-      <!-- Vista mapa -->
-      <div class="discover__map-area" id="map-area">
-        <div class="map-viewport" id="map-container" role="application" aria-label="Mapa de eventos"></div>
-        <!-- Botón geo: activa/desactiva geolocalización desde el mapa -->
-        <button type="button" class="geo-toggle-btn" id="btn-geo-toggle" aria-label="Cambiar configuración de ubicación">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>
-        </button>
-      </div>
-
-      <!-- Vista lista -->
-      <div class="discover__list" id="list-container">
-        <div id="event-list"></div>
-      </div>
-
-      <!-- Toggle mapa / lista — fuera de map-area para que persista en vista lista -->
-      <div class="view-toggle" role="tablist" aria-label="Cambiar vista">
-        <button type="button" class="view-toggle__btn is-active" id="btn-view-map" role="tab" aria-selected="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>
-          Mapa
-        </button>
-        <button type="button" class="view-toggle__btn" id="btn-view-list" role="tab" aria-selected="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-          Lista
-        </button>
-      </div>
-
-      <!-- Estados vacío / error (mapa y lista) -->
-      <div class="empty-state" id="empty-state" hidden>
-        <div class="empty-state__inner">
-          <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.172 16.172a4 4 0 0 1 5.656 0M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
-          <h2 class="empty-state__title" id="empty-title"></h2>
-          <p class="empty-state__text" id="empty-text"></p>
-          <div class="empty-state__actions" id="empty-actions"></div>
-        </div>
-      </div>
-
-      <!-- Panel resumen evento -->
-      <aside class="event-panel" id="event-panel" aria-label="Resumen del evento">
-        <div class="event-panel__handle" aria-hidden="true"></div>
-        <div id="panel-content"></div>
-      </aside>
-    </section>
-
-    <!-- 6. Pantalla Partidos (HdU2) -->
-    <section id="screen-matches" class="screen screen-matches" aria-label="Explorar partidos">
-      <header class="matches__header">
-        <h1 class="heading-m matches__title">Partidos</h1>
-        <div id="matches-team-toggle" class="matches-team-toggle"></div>
-        <div id="matches-tabs" class="matches-tabs" role="tablist" aria-label="Vista de partidos"></div>
-      </header>
-      <div id="matches-content" class="matches__content"></div>
-    </section>
-
-    <!-- Modal: detalle de partido -->
-    <div class="sheet-overlay" id="match-modal-overlay" aria-hidden="true"></div>
-    <div class="filter-sheet match-modal" id="match-modal" role="dialog" aria-modal="true" aria-label="Detalle del partido">
-      <div id="match-modal-content"></div>
-    </div>
-
-    <!-- Flujo de acceso para reservar -->
-    <div class="sheet-overlay" id="access-overlay" aria-hidden="true"></div>
-    <div class="filter-sheet access-sheet" id="access-sheet" role="dialog" aria-modal="true" aria-labelledby="access-title">
-      <div id="access-content"></div>
-    </div>
-
-    <!-- Navegación inferior -->
-    <nav class="bottom-nav" id="bottom-nav" hidden aria-label="Navegación principal">
-      <button type="button" class="bottom-nav__btn is-active" data-main-tab="discover" aria-current="page">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>
-        <span>Explorar</span>
+      <button type="button" class="home-location" id="home-location" aria-label="Cambiar ubicación de búsqueda">
+        <span class="home-location__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        </span>
+        <span class="home-location__text">
+          <span class="home-location__eyebrow">Viendo sitios cerca de</span>
+          <strong id="home-location-label">…</strong>
+        </span>
+        <span class="home-location__change">Cambiar</span>
       </button>
-      <button type="button" class="bottom-nav__btn" data-main-tab="matches">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <div class="home-filterbar">
+        <button type="button" class="home-filter" id="home-filter-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18L14 14v5l-4 2v-7L3 5z"/></svg>
+          <span class="home-filter__label" id="home-filter-label">Masculino · Todas</span>
+          <svg class="home-filter__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <button type="button" class="home-icon-btn" id="home-calendar-btn" aria-label="Ver calendario de partidos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </button>
+      </div>
+      <div id="home-content" class="home-content"></div>
+    </section>
+
+    <!-- ===================== Detalle de partido ===================== -->
+    <section id="screen-match-detail" class="screen screen-detail" aria-label="Detalle del partido">
+      <header class="detail-header">
+        <button type="button" class="detail-header__back" data-nav-back aria-label="Volver">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <span class="detail-header__title">Partido</span>
+      </header>
+      <div id="match-detail-content" class="detail-content"></div>
+    </section>
+
+    <!-- ===================== Detalle de sitio ===================== -->
+    <section id="screen-venue-detail" class="screen screen-detail" aria-label="Detalle del sitio">
+      <header class="detail-header">
+        <button type="button" class="detail-header__back" data-nav-back aria-label="Volver">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <span class="detail-header__title">Dónde verlo</span>
+      </header>
+      <div id="venue-detail-content" class="detail-content"></div>
+    </section>
+
+    <!-- ===================== Mis entradas ===================== -->
+    <section id="screen-tickets" class="screen screen-tickets" aria-label="Mis entradas">
+      <header class="app-header">
+        <div class="app-header__brand">
+          <span class="app-header__title">Mis entradas</span>
+        </div>
+      </header>
+      <div id="tickets-content" class="tickets-content"></div>
+    </section>
+
+    <!-- ===================== Sheet de reserva ===================== -->
+    <div class="sheet-overlay" id="reserve-overlay" aria-hidden="true"></div>
+    <div class="filter-sheet reserve-sheet" id="reserve-sheet" role="dialog" aria-modal="true" aria-labelledby="reserve-title">
+      <div id="reserve-content"></div>
+    </div>
+
+    <!-- ===================== Overlay del ticket (entrada de estadio) ===================== -->
+    <div class="ticket-overlay" id="ticket-overlay" aria-hidden="true">
+      <div class="ticket-stage" id="ticket-stage"></div>
+    </div>
+
+    <!-- ===================== Modal de ubicación ===================== -->
+    <div class="sheet-overlay" id="location-overlay" aria-hidden="true"></div>
+    <div class="filter-sheet location-sheet" id="location-sheet" role="dialog" aria-modal="true" aria-labelledby="location-title">
+      <div id="location-content"></div>
+    </div>
+
+    <!-- ===================== Sheet: ordenar y filtrar sitios ===================== -->
+    <div class="sheet-overlay" id="venue-opts-overlay" aria-hidden="true"></div>
+    <div class="filter-sheet" id="venue-opts-sheet" role="dialog" aria-modal="true" aria-labelledby="venue-opts-title">
+      <div id="venue-opts-content"></div>
+    </div>
+
+    <!-- ===================== Sheet: filtrar partidos (equipo + competición) ===================== -->
+    <div class="sheet-overlay" id="home-filter-overlay" aria-hidden="true"></div>
+    <div class="filter-sheet" id="home-filter-sheet" role="dialog" aria-modal="true" aria-labelledby="home-filter-title">
+      <div id="home-filter-content"></div>
+    </div>
+
+    <!-- ===================== Sheet: calendario de partidos ===================== -->
+    <div class="sheet-overlay" id="calendar-overlay" aria-hidden="true"></div>
+    <div class="filter-sheet calendar-sheet" id="calendar-sheet" role="dialog" aria-modal="true" aria-labelledby="calendar-title">
+      <div id="calendar-content"></div>
+    </div>
+
+    <!-- ===================== Sheet de perfil (demo) ===================== -->
+    <div class="sheet-overlay" id="profile-overlay" aria-hidden="true"></div>
+    <div class="filter-sheet" id="profile-sheet" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+      <div id="profile-content"></div>
+    </div>
+
+    <!-- ===================== Mini-nav flotante autoocultable ===================== -->
+    <nav class="mini-nav" id="mini-nav" aria-label="Navegación principal">
+      <button type="button" class="mini-nav__btn is-active" data-main-tab="home" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 9v11a1 1 0 0 0 1 1h5v-6h4v6h5a1 1 0 0 0 1-1V9z"/></svg>
         <span>Partidos</span>
       </button>
+      <button type="button" class="mini-nav__btn" data-main-tab="tickets">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M15 6v12"/></svg>
+        <span>Mis entradas</span>
+        <span class="mini-nav__badge" id="tickets-badge" hidden>0</span>
+      </button>
     </nav>
-
-    <!-- Modal: activar / desactivar geolocalización -->
-    <div class="sheet-overlay" id="geo-modal-overlay" aria-hidden="true"></div>
-    <div class="filter-sheet" id="geo-modal" role="dialog" aria-modal="true" aria-labelledby="geo-modal-title">
-      <div class="filter-sheet__header">
-        <h2 class="filter-sheet__title" id="geo-modal-title"></h2>
-      </div>
-      <p class="body-m" id="geo-modal-text" style="color: var(--content-secondary); margin-bottom: var(--space-6)"></p>
-      <div class="filter-sheet__footer">
-        <button type="button" class="btn btn--block" id="geo-modal-confirm"></button>
-        <button type="button" class="btn btn--ghost btn--block" id="geo-modal-cancel" style="margin-top: var(--space-3)">Cancelar</button>
-      </div>
-    </div>
-
-    <!-- Panel de filtros -->
-    <div class="sheet-overlay" id="filter-overlay" aria-hidden="true"></div>
-    <div class="filter-sheet" id="filter-sheet" role="dialog" aria-label="Filtros" aria-modal="true">
-      <div class="filter-sheet__header">
-        <h2 class="filter-sheet__title">Filtros</h2>
-        <button type="button" class="filter-sheet__clear" id="filter-clear">Limpiar</button>
-      </div>
-
-      <div class="filter-group">
-        <h3 class="filter-group__title">Tipo de espacio</h3>
-        <div class="filter-chips" id="filter-space-types"></div>
-      </div>
-
-      <div class="filter-sheet__footer">
-        <button type="button" class="btn btn--primary btn--block" id="filter-apply">Aplicar filtros</button>
-        <button type="button" class="btn btn--ghost btn--block" id="filter-close" style="margin-top: var(--space-3)">Cerrar</button>
-      </div>
-    </div>
 
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="js/matches-data.js"></script>
-  <script src="js/data.js"></script>
-  <script src="js/map.js"></script>
-  <script src="js/matches.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/matches-data.js?v=3"></script>
+  <script src="js/data.js?v=3"></script>
+  <script src="js/map.js?v=3"></script>
+  <script src="js/matches.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
 </body>
 </html>

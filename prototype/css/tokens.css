@@ -53,50 +53,67 @@
   --neutral-900: #080b1a;
   --neutral-950: #05070e;
 
-  /* Semantic — Light */
-  --background-canvas: var(--neutral-50);
-  --background-surface: var(--neutral-0);
-  --background-raised: var(--neutral-0);
-  --background-sunken: var(--neutral-100);
-  --background-inverse: var(--neutral-900);
-  --background-brand: var(--blau-500);
-  --background-brand-strong: var(--blau-600);
-  --background-accent: var(--grana-600);
+  /* Semantic — Dark (única · valores de la Design Library de Figma, modo Dark) */
+  color-scheme: dark;
 
-  --content-primary: var(--neutral-900);
-  --content-secondary: var(--neutral-600);
-  --content-tertiary: var(--neutral-500);
-  --content-disabled: var(--neutral-400);
-  --content-on-brand: var(--neutral-0);
-  --content-on-accent: var(--neutral-0);
-  --content-link: var(--blau-500);
-  --content-brand: var(--blau-500);
-  --content-danger: var(--grana-600);
+  --background-canvas: var(--neutral-900);      /* #080b1a */
+  --background-surface: var(--neutral-800);     /* #0f1629 */
+  --background-raised: var(--neutral-700);      /* #232b55 */
+  --background-sunken: var(--neutral-950);       /* #05070e */
+  --background-inverse: var(--neutral-0);        /* #ffffff */
+  --background-brand: var(--blau-500);           /* #004d98 */
+  --background-brand-strong: var(--blau-400);    /* #0a5ba3 */
+  --background-grana: var(--grana-600);          /* #a50044 */
+  --background-accent: var(--gold-500);          /* #fac22b */
 
-  --border-subtle: var(--neutral-100);
-  --border-default: var(--neutral-200);
-  --border-strong: var(--neutral-300);
-  --border-focus: var(--blau-400);
-  --border-brand: var(--blau-500);
+  --content-primary: var(--neutral-0);           /* #ffffff */
+  --content-secondary: var(--neutral-300);       /* #b0b9d0 */
+  --content-tertiary: var(--neutral-400);        /* #8089a8 */
+  --content-disabled: var(--neutral-600);        /* #39426a */
+  --content-on-brand: var(--neutral-0);          /* #ffffff */
+  --content-on-accent: var(--neutral-900);       /* #080b1a */
+  --content-link: #5e97ce;
+  --content-brand: #5e97ce;
+  --content-danger: #ed998d;
 
-  --interactive-primary: var(--gold-600);
-  --interactive-primary-hover: var(--gold-700);
-  --interactive-primary-active: var(--gold-800);
-  --interactive-primary-disabled: var(--neutral-200);
-  --interactive-on-primary: var(--neutral-900);
+  --border-subtle: var(--neutral-800);           /* #0f1629 */
+  --border-default: var(--neutral-700);          /* #232b55 */
+  --border-strong: var(--neutral-600);           /* #39426a */
+  --border-focus: var(--gold-500);               /* #fac22b */
+  --border-brand: var(--blau-300);               /* #2e75b8 */
 
-  --interactive-secondary: var(--blau-500);
-  --interactive-secondary-hover: var(--blau-600);
-  --interactive-secondary-active: var(--blau-700);
-  --interactive-on-secondary: var(--neutral-0);
+  --interactive-primary: var(--gold-500);        /* #fac22b */
+  --interactive-primary-hover: var(--gold-400);  /* #fbca33 */
+  --interactive-primary-active: var(--gold-600); /* #edbb00 */
+  --interactive-primary-disabled: var(--neutral-700); /* #232b55 */
+  --interactive-on-primary: var(--neutral-900);  /* #080b1a */
 
-  /* Event categories */
-  --event-classic: var(--blau-500);
-  --event-classic-surface: var(--blau-50);
-  --event-community: var(--grana-600);
-  --event-community-surface: var(--grana-50);
-  --event-pena: var(--gold-600);
-  --event-pena-surface: var(--gold-50);
+  --interactive-secondary: var(--blau-400);      /* #0a5ba3 */
+  --interactive-secondary-hover: var(--blau-300);/* #2e75b8 */
+  --interactive-secondary-active: var(--blau-500);/* #004d98 */
+  --interactive-on-secondary: var(--neutral-0);  /* #ffffff */
+
+  /* Feedback — Dark */
+  --feedback-info-surface: #133b6c;
+  --feedback-info-content: #8ab9ea;
+  --feedback-info-border: #1a63b1;
+  --feedback-success-surface: #134332;
+  --feedback-success-content: #8bc2a2;
+  --feedback-success-border: #1b7143;
+  --feedback-warning-surface: #623b14;
+  --feedback-warning-content: #ebb87e;
+  --feedback-warning-border: #b0620b;
+  --feedback-danger-surface: #632121;
+  --feedback-danger-content: #ed998d;
+  --feedback-danger-border: #b33123;
+
+  /* Event categories — Dark */
+  --event-classic: var(--blau-400);              /* #0a5ba3 */
+  --event-classic-surface: #04203b;
+  --event-community: var(--grana-500);           /* #bb0f50 */
+  --event-community-surface: var(--grana-900);   /* #45001e */
+  --event-pena: var(--gold-500);                 /* #fac22b */
+  --event-pena-surface: var(--gold-900);         /* #5a4700 */
 
   /* Typography */
   --font-ui: 'Onest', system-ui, sans-serif;
@@ -130,6 +147,7 @@
 
   /* Layout */
   --bottom-nav-height: 64px;
+  --mini-nav-clearance: 96px; /* espacio inferior para la mini-nav flotante (24×4) */
 
   /* Radius */
   --radius-none: 0;
