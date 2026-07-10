@@ -24,7 +24,10 @@ const App = {
     // Orden y filtros de la lista de sitios
     venueSort: 'distance',
     venueFilters: { spaceType: [], hideFull: false, minRating: 0 },
+    venueFavOnly: false,
     venueOptsDraft: null,
+    // Locales favoritos (ids de plantilla; persisten en localStorage)
+    favorites: [],
     tickets: [],
     mapExpanded: false,
     ticketSeq: 0,
@@ -34,6 +37,7 @@ const App = {
 
   init() {
     this.cacheElements();
+    this.loadFavorites();
     this.bindEvents();
     this.showScreen('home');
     this.updateMiniNav();
@@ -84,8 +88,11 @@ const App = {
     this.els['location-content'].addEventListener('click', (e) => this.handleLocationClick(e));
     this.els['location-content'].addEventListener('submit', (e) => this.handleLocationSubmit(e));
 
-    // Detalle de partido → abrir sitio / ordenar-filtrar
+    // Detalle de partido → abrir sitio / ordenar-filtrar / favoritos
     this.els['match-detail-content'].addEventListener('click', (e) => {
+      const fav = e.target.closest('[data-fav-toggle]');
+      if (fav) { e.stopPropagation(); this.toggleFavorite(fav.dataset.favToggle); return; }
+      if (e.target.closest('[data-fav-only]')) { this.toggleFavOnly(); return; }
       const opts = e.target.closest('[data-open-venue-opts]');
       if (opts) { this.openVenueOpts(opts.dataset.openVenueOpts); return; }
       if (e.target.closest('[data-clear-venue-filters]')) { this.clearVenueOpts(true); return; }
@@ -97,8 +104,10 @@ const App = {
     this.els['venue-opts-overlay'].addEventListener('click', () => this.closeVenueOpts());
     this.els['venue-opts-content'].addEventListener('click', (e) => this.handleVenueOptsClick(e));
 
-    // Detalle de sitio → mapa / reservar
+    // Detalle de sitio → mapa / reservar / favorito
     this.els['venue-detail-content'].addEventListener('click', (e) => {
+      const fav = e.target.closest('[data-fav-toggle]');
+      if (fav) { this.toggleFavorite(fav.dataset.favToggle); return; }
       const mapAction = e.target.closest('[data-map-action]')?.dataset.mapAction;
       if (mapAction === 'expand') { this.expandMap(); return; }
       if (mapAction === 'collapse') { this.collapseMap(); return; }
@@ -166,6 +175,8 @@ const App = {
   navBack() {
     if (this.state.mapExpanded) { this.collapseMap(); return; }
     if (this.state.screen === 'venue-detail') {
+      // Refresca la lista para reflejar favoritos/aforo tras entrar en un sitio
+      this.renderMatchDetail();
       this.showScreen('match-detail');
     } else if (this.state.screen === 'match-detail') {
       this.showMainTab('home');
@@ -368,15 +379,76 @@ const App = {
     return null;
   },
 
+  /* ============================ Favoritos ============================ */
+
+  loadFavorites() {
+    try {
+      const raw = window.localStorage.getItem('bb_favorites');
+      this.state.favorites = raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      this.state.favorites = [];
+    }
+  },
+
+  saveFavorites() {
+    try {
+      window.localStorage.setItem('bb_favorites', JSON.stringify(this.state.favorites));
+    } catch (e) { /* almacenamiento no disponible: se mantiene solo en memoria */ }
+  },
+
+  isFavorite(venueId) {
+    return this.state.favorites.includes(venueId);
+  },
+
+  toggleFavorite(venueId) {
+    const i = this.state.favorites.indexOf(venueId);
+    if (i >= 0) this.state.favorites.splice(i, 1);
+    else this.state.favorites.push(venueId);
+    this.saveFavorites();
+    // Refresca la vista actual para reflejar el cambio
+    if (this.state.screen === 'match-detail') {
+      this.renderMatchDetail();
+    } else if (this.state.screen === 'venue-detail') {
+      this.updateDetailFavButton(venueId);
+    }
+  },
+
+  updateDetailFavButton(venueId) {
+    const btn = document.getElementById('fav-toggle-detail');
+    if (!btn) return;
+    const fav = this.isFavorite(venueId);
+    btn.classList.toggle('is-fav', fav);
+    btn.setAttribute('aria-pressed', String(fav));
+    const label = btn.querySelector('.venue-fav__label');
+    if (label) label.textContent = fav ? 'Guardado' : 'Guardar';
+  },
+
+  /* ¿Este partido se puede ver en alguno de mis sitios guardados? (según ubicación) */
+  matchHasFavoriteVenue(matchId) {
+    if (!this.state.favorites.length) return false;
+    return this.getVenuesForMatch(matchId).some((v) => this.isFavorite(v.id));
+  },
+
+  /* Icono estrella (relleno cuando es favorito) */
+  starIcon() {
+    return '<svg class="star-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.4 9.3l5.8-.8z"/></svg>';
+  },
+
   /* ============================ Detalle de partido ============================ */
 
   openMatchDetail(matchId) {
     this.state.selectedMatchId = matchId;
     this.state.venueSort = 'distance';
     this.state.venueFilters = { spaceType: [], hideFull: false, minRating: 0 };
+    this.state.venueFavOnly = false;
     this.renderMatchDetail();
     this.showScreen('match-detail');
     this.els['match-detail-content'].scrollTop = 0;
+  },
+
+  toggleFavOnly() {
+    this.state.venueFavOnly = !this.state.venueFavOnly;
+    this.renderMatchDetail();
   },
 
   venueFilterCount() {
@@ -401,8 +473,34 @@ const App = {
     }
 
     const all = isClosed ? [] : this.getVenuesForMatch(match.id);
-    const shown = isClosed ? [] : sortVenues(filterVenues(all, this.state.venueFilters), this.state.venueSort);
+    const favInMatch = all.filter((v) => this.isFavorite(v.id));
+    const hasFav = favInMatch.length > 0;
+    if (!hasFav && this.state.venueFavOnly) this.state.venueFavOnly = false;
+
+    let shown = isClosed ? [] : filterVenues(all, this.state.venueFilters);
+    if (this.state.venueFavOnly) shown = shown.filter((v) => this.isFavorite(v.id));
+    shown = sortVenues(shown, this.state.venueSort);
+    // Los favoritos van primero (prioridad), manteniendo el orden elegido dentro de cada grupo
+    if (hasFav && !this.state.venueFavOnly) {
+      shown = [
+        ...shown.filter((v) => this.isFavorite(v.id)),
+        ...shown.filter((v) => !this.isFavorite(v.id)),
+      ];
+    }
     const activeCount = this.venueFilterCount();
+
+    // Banner prioritario: este partido se ve en un sitio guardado
+    const priorityBanner = hasFav ? `
+      <div class="fav-priority">
+        <div class="fav-priority__text">
+          ${this.starIcon()}
+          <span>Este partido se ve en <strong>${favInMatch.length}</strong> de tus sitios guardados</span>
+        </div>
+        <button type="button" class="fav-priority__toggle${this.state.venueFavOnly ? ' is-active' : ''}" data-fav-only>
+          ${this.state.venueFavOnly ? 'Ver todos' : 'Solo favoritos'}
+        </button>
+      </div>
+    ` : '';
 
     let venuesBlock;
     if (isClosed) {
@@ -464,6 +562,7 @@ const App = {
           <h2 class="home-section-title" style="margin:0">Dónde verlo</h2>
           <span class="venues-section__loc">📍 ${label}</span>
         </div>
+        ${priorityBanner}
         ${toolbar}
         ${venuesBlock}
       </div>
@@ -473,6 +572,7 @@ const App = {
   venueCardHtml(v) {
     const urgency = this.venueUrgency(v);
     const free = Math.max(0, v.capacity - v.reserved);
+    const fav = this.isFavorite(v.id);
     const statusBadge =
       urgency === 'full'
         ? '<span class="venue-card__status venue-card__status--full">Completo</span>'
@@ -486,13 +586,15 @@ const App = {
           ? `Quedan ${free} plazas`
           : `${v.reserved}/${v.capacity} plazas`;
     return `
-      <article class="event-card venue-card" data-venue-id="${v.id}" role="button" tabindex="0">
+      <article class="event-card venue-card${fav ? ' is-fav' : ''}" data-venue-id="${v.id}" role="button" tabindex="0">
         <div class="venue-card__media venue-card__media--${v.category}">
           <img class="venue-card__img" src="${v.image}" alt="" loading="lazy" onerror="this.remove()">
           <span class="venue-badge venue-badge--${v.category} venue-card__badge">${SPACE_TYPE_LABELS[v.spaceType]}</span>
+          <button type="button" class="fav-btn${fav ? ' is-fav' : ''}" data-fav-toggle="${v.id}" aria-pressed="${fav}" aria-label="${fav ? 'Quitar de favoritos' : 'Guardar como favorito'}">${this.starIcon()}</button>
           ${statusBadge}
         </div>
         <div class="event-card__body">
+          ${fav ? '<span class="venue-card__saved">' + this.starIcon() + ' Guardado</span>' : ''}
           <h3 class="event-card__name">${v.name}</h3>
           <div class="venue-card__rating">
             ${this.starsHtml(v.rating)}
@@ -662,6 +764,7 @@ const App = {
     const free = Math.max(0, v.capacity - v.reserved);
     const full = free === 0;
     const urgency = this.venueUrgency(v);
+    const fav = this.isFavorite(v.id);
     const datetime = match ? formatMatchDatetime(match) : '';
 
     this.els['venue-detail-content'].innerHTML = `
@@ -669,6 +772,9 @@ const App = {
         <img class="venue-hero__img" src="${v.image}" alt="" onerror="this.remove()">
         <div class="venue-hero__grad"></div>
         <span class="venue-badge venue-badge--${v.category} venue-hero__badge">${SPACE_TYPE_LABELS[v.spaceType]}</span>
+        <button type="button" class="venue-fav${fav ? ' is-fav' : ''}" id="fav-toggle-detail" data-fav-toggle="${v.id}" aria-pressed="${fav}">
+          ${this.starIcon()}<span class="venue-fav__label">${fav ? 'Guardado' : 'Guardar'}</span>
+        </button>
       </div>
 
       <div class="venue-body">

@@ -3333,6 +3333,163 @@ body {
   margin-bottom: 0;
 }
 
+/* ============================================================
+   Favoritos (locales guardados) + indicadores de prioridad
+   ============================================================ */
+
+.star-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+/* Botón estrella sobre la foto de la tarjeta */
+.fav-btn {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: rgba(5, 7, 14, 0.55);
+  color: var(--neutral-0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  transition: transform 0.12s ease, color 0.15s ease;
+}
+
+.fav-btn:active { transform: scale(0.9); }
+.fav-btn .star-icon { width: 19px; height: 19px; opacity: 0.9; }
+
+.fav-btn.is-fav {
+  color: var(--interactive-primary);
+}
+
+.fav-btn.is-fav .star-icon { opacity: 1; }
+
+/* La tarjeta guardada gana un borde dorado */
+.event-card.is-fav {
+  border-color: var(--interactive-primary);
+}
+
+.venue-card__saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--text-label-s);
+  color: var(--interactive-primary);
+  margin-bottom: var(--space-1);
+}
+
+.venue-card__saved .star-icon { width: 13px; height: 13px; }
+
+/* El badge de estado se mueve a la esquina inferior izquierda (la estrella ocupa la superior derecha) */
+.venue-card__status {
+  top: auto;
+  right: auto;
+  left: var(--space-3);
+  bottom: var(--space-3);
+}
+
+/* Botón guardar en el detalle del sitio (sobre la cabecera) */
+.venue-fav {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-full);
+  background: rgba(5, 7, 14, 0.6);
+  color: var(--neutral-0);
+  font: var(--text-label-m);
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  box-shadow: var(--shadow-2);
+}
+
+.venue-fav .star-icon { width: 18px; height: 18px; }
+
+.venue-fav.is-fav {
+  background: var(--interactive-primary);
+  color: var(--interactive-on-primary);
+}
+
+/* Banner prioritario en la lista de sitios de un partido */
+.fav-priority {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--event-pena-surface);
+  border: 1px solid var(--interactive-primary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+}
+
+.fav-priority__text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--text-body-s);
+  color: var(--content-primary);
+}
+
+.fav-priority__text .star-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--interactive-primary);
+}
+
+.fav-priority__text strong { color: var(--interactive-primary); }
+
+.fav-priority__toggle {
+  flex-shrink: 0;
+  border: 1px solid var(--interactive-primary);
+  background: transparent;
+  color: var(--interactive-primary);
+  font: var(--text-label-s);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.fav-priority__toggle.is-active {
+  background: var(--interactive-primary);
+  color: var(--interactive-on-primary);
+}
+
+/* Indicador "en un sitio guardado" en el feed y el hero */
+.fav-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--text-label-s);
+  color: var(--interactive-primary);
+  margin-bottom: var(--space-2);
+}
+
+.fav-flag .star-icon { width: 14px; height: 14px; }
+
+.home-hero__fav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--text-label-s);
+  color: var(--gold-300);
+  margin-bottom: var(--space-3);
+}
+
+.home-hero__fav .star-icon { width: 14px; height: 14px; }
+
 /* Hidden utility */
 [hidden] {
   display: none !important;

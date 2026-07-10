@@ -76,6 +76,11 @@ const Home = {
     `;
   },
 
+  favFlag(match, cls) {
+    if (!App.matchHasFavoriteVenue(match.id)) return '';
+    return `<div class="${cls}">${App.starIcon()}<span>En un sitio que guardaste</span></div>`;
+  },
+
   renderHero(match) {
     const comp = COMPETITIONS[match.competitionId].label;
     const teamTag = match.team === 'women' ? 'Femení' : 'Masculino';
@@ -83,6 +88,7 @@ const Home = {
     return `
       <button type="button" class="home-hero" data-match-id="${match.id}">
         <span class="home-hero__flag">Partido destacado</span>
+        ${this.favFlag(match, 'home-hero__fav')}
         <div class="home-hero__teams">
           ${crestHtml(match.home, match.homeAbbr, 'barca', 'width:56px;height:56px;font-size:14px')}
           <span class="home-hero__vs">VS</span>
@@ -117,6 +123,7 @@ const Home = {
 
     return `
       <article class="match-feed-card" data-match-id="${match.id}" role="button" tabindex="0">
+        ${this.favFlag(match, 'fav-flag')}
         <div class="match-feed-card__top">
           <span class="overline">${comp}</span>
           ${this.socialProof(match)}
