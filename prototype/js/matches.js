@@ -97,7 +97,7 @@ const Home = {
         <div class="home-hero__datetime">${datetime}</div>
         <div class="home-hero__footer">
           ${this.socialProof(match)}
-          <span class="home-hero__cta">Ver dónde verlo</span>
+          <span class="home-hero__cta">Dónde verlo</span>
         </div>
       </button>
     `;
@@ -134,7 +134,7 @@ const Home = {
         </div>
         <div class="match-feed-card__bottom">
           <span class="match-feed-card__datetime">${timeLabel}</span>
-          <span class="match-feed-card__go">Ver ›</span>
+          <span class="match-feed-card__go">Dónde verlo ›</span>
         </div>
         ${statusHtml}
       </article>

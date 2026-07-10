@@ -360,6 +360,14 @@ const App = {
     </span>`;
   },
 
+  /* Nivel de ocupación de un sitio: 'full' | 'soon' | null (para urgencia) */
+  venueUrgency(v) {
+    if (v.reserved >= v.capacity) return 'full';
+    const free = v.capacity - v.reserved;
+    if (free <= 4 || v.reserved / v.capacity >= 0.85) return 'soon';
+    return null;
+  },
+
   /* ============================ Detalle de partido ============================ */
 
   openMatchDetail(matchId) {
@@ -463,13 +471,26 @@ const App = {
   },
 
   venueCardHtml(v) {
-    const full = v.reserved >= v.capacity;
+    const urgency = this.venueUrgency(v);
+    const free = Math.max(0, v.capacity - v.reserved);
+    const statusBadge =
+      urgency === 'full'
+        ? '<span class="venue-card__status venue-card__status--full">Completo</span>'
+        : urgency === 'soon'
+          ? '<span class="venue-card__status venue-card__status--soon">Últimas plazas</span>'
+          : '';
+    const capacityText =
+      urgency === 'full'
+        ? `${v.reserved}/${v.capacity} · completo`
+        : urgency === 'soon'
+          ? `Quedan ${free} plazas`
+          : `${v.reserved}/${v.capacity} plazas`;
     return `
       <article class="event-card venue-card" data-venue-id="${v.id}" role="button" tabindex="0">
         <div class="venue-card__media venue-card__media--${v.category}">
           <img class="venue-card__img" src="${v.image}" alt="" loading="lazy" onerror="this.remove()">
           <span class="venue-badge venue-badge--${v.category} venue-card__badge">${SPACE_TYPE_LABELS[v.spaceType]}</span>
-          ${full ? '<span class="venue-card__full">Completo</span>' : ''}
+          ${statusBadge}
         </div>
         <div class="event-card__body">
           <h3 class="event-card__name">${v.name}</h3>
@@ -481,7 +502,7 @@ const App = {
           <p class="event-card__location">${v.location}</p>
           <div class="event-card__meta">
             <span class="event-card__distance">${formatDistance(v.distanceKm)}</span>
-            <span class="event-card__capacity">${v.reserved}/${v.capacity} plazas</span>
+            <span class="event-card__capacity${urgency ? ` is-${urgency}` : ''}">${capacityText}</span>
           </div>
         </div>
       </article>
@@ -640,6 +661,7 @@ const App = {
     const match = getMatchById(this.state.selectedMatchId);
     const free = Math.max(0, v.capacity - v.reserved);
     const full = free === 0;
+    const urgency = this.venueUrgency(v);
     const datetime = match ? formatMatchDatetime(match) : '';
 
     this.els['venue-detail-content'].innerHTML = `
@@ -658,6 +680,9 @@ const App = {
         </div>
         <p class="venue-detail__addr">${v.location} · ${v.address}</p>
 
+        ${urgency === 'soon' ? `<p class="alert alert--warning venue-urgency">¡Casi lleno! Quedan solo <strong>${free} plazas</strong>. Reserva ahora para asegurar tu sitio.</p>` : ''}
+        ${urgency === 'full' ? `<p class="alert alert--danger venue-urgency">Este sitio está completo. Echa un vistazo a otros sitios cercanos.</p>` : ''}
+
         <div class="venue-actions">
           <button type="button" class="venue-action" data-map-action="expand">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 20l-5.5 2.5V6L9 3.5m0 16.5 6-3m-6 3V3.5m6 13.5 5.5 2.5V6L15 3.5m0 13V3.5m0 0L9 6"/></svg>
@@ -674,7 +699,7 @@ const App = {
         <div class="venue-info-list">
           <div class="venue-info">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1M16 3.5a3 3 0 0 1 0 5.5M21 20v-1a5 5 0 0 0-3-4.5"/></svg>
-            <div><span>Aforo</span><strong>${v.reserved}/${v.capacity} · ${free} libres</strong></div>
+            <div><span>Aforo</span><strong class="${urgency ? `venue-aforo--${urgency}` : ''}">${v.reserved}/${v.capacity} · ${free} libres</strong></div>
           </div>
           ${match ? `
             <div class="venue-info">
