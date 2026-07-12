@@ -450,6 +450,13 @@ body {
   background: var(--neutral-700);
 }
 
+/* Con el logo cargado, el escudo se apoya directamente sobre la tarjeta
+   (sin caja de color); el color y la abreviatura quedan solo como fallback */
+.match-card__crest.has-logo {
+  background: transparent;
+  color: transparent;
+}
+
 .match-card__vs {
   font: var(--text-label-s);
   color: var(--content-tertiary);
@@ -925,11 +932,19 @@ body {
 }
 
 .filter-sheet__clear {
-  border: none;
-  background: none;
+  padding: var(--space-1) var(--space-3);
+  border: 1.5px solid var(--border-brand);
+  border-radius: var(--radius-full);
+  background: transparent;
   font: var(--text-label-m);
-  color: var(--content-link);
+  color: var(--content-brand);
   cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.filter-sheet__clear:hover {
+  background: var(--event-classic-surface);
 }
 
 .filter-group {
@@ -1348,31 +1363,6 @@ body {
   min-width: 0;
 }
 
-.segmented-control {
-  display: flex;
-  background: var(--background-sunken);
-  border-radius: var(--radius-full);
-  padding: 2px;
-  flex-shrink: 0;
-}
-
-.segmented-control__btn {
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  border-radius: var(--radius-full);
-  background: transparent;
-  font: var(--text-label-s);
-  color: var(--content-secondary);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.segmented-control__btn.is-active {
-  background: var(--background-surface);
-  color: var(--content-primary);
-  box-shadow: var(--shadow-1);
-}
-
 .matches-tabs {
   display: flex;
   gap: var(--space-1);
@@ -1691,37 +1681,8 @@ body {
   gap: var(--space-2);
 }
 
-.app-header__logo {
-  width: 30px;
-  height: 30px;
-  object-fit: contain;
-}
-
 .app-header__title {
   font: var(--text-heading-m);
-}
-
-.app-header__profile {
-  width: 40px;
-  height: 40px;
-  border: 1.5px solid var(--border-default);
-  border-radius: var(--radius-full);
-  background: var(--background-surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--content-secondary);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.app-header__profile:hover {
-  background: var(--background-sunken);
-}
-
-.app-header__profile svg {
-  width: 22px;
-  height: 22px;
 }
 
 /* Subcabecera del home: equipo + pestañas */
@@ -1867,24 +1828,29 @@ body {
   margin-bottom: var(--space-3);
 }
 
-.match-feed-card__social {
-  font: var(--text-label-s);
-  color: var(--content-tertiary);
+/* Badge "N sitios cerca" con pin de ubicación */
+.venues-near-badge {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-}
-
-.match-feed-card__social--yes {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--event-classic-surface);
   color: var(--content-brand);
+  font: var(--text-label-s);
+  flex-shrink: 0;
 }
 
-.match-feed-card__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--grana-600);
-  box-shadow: 0 0 0 3px var(--grana-50);
+.venues-near-badge svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* Variante gris: partido aún sin sitios (misma forma, sin acento) */
+.venues-near-badge--muted {
+  background: var(--background-raised);
+  color: var(--content-secondary);
 }
 
 .match-feed-card__teams {
@@ -1913,24 +1879,22 @@ body {
   white-space: nowrap;
 }
 
-.match-feed-card__vs {
-  font: var(--text-label-s);
-  color: var(--content-tertiary);
+/* Hora del partido en el centro de la fila de equipos */
+.match-feed-card__time {
+  font: var(--text-label-l);
+  color: var(--content-primary);
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .match-feed-card__bottom {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
   margin-top: var(--space-4);
   padding-top: var(--space-3);
   border-top: 1px solid var(--border-subtle);
-}
-
-.match-feed-card__datetime {
-  font: var(--text-body-s);
-  color: var(--content-secondary);
 }
 
 .match-feed-card__go {
@@ -2587,6 +2551,72 @@ body {
 }
 
 /* ── Mis entradas ── */
+/* Tarjeta de perfil (abre el sheet de perfil) */
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--background-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  color: var(--content-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.profile-card:active {
+  transform: scale(0.99);
+}
+
+.profile-card__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--background-brand);
+  color: var(--content-on-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-card__avatar svg {
+  width: 22px;
+  height: 22px;
+}
+
+.profile-card__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-card__name {
+  font: var(--text-label-l);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-card__meta {
+  font: var(--text-body-s);
+  color: var(--content-secondary);
+}
+
+.profile-card__chevron {
+  width: 18px;
+  height: 18px;
+  color: var(--content-tertiary);
+  flex-shrink: 0;
+}
+
 .tickets-list {
   display: flex;
   flex-direction: column;
@@ -2786,17 +2816,15 @@ body {
    v2 — Ubicación, orden/filtros, tarjetas con foto, detalle Maps, reseñas
    ============================================================ */
 
-/* ── Chip de ubicación en el home ── */
-/* Botón de ubicación destacado */
+/* ── Chip de ubicación en el home (primera franja de la pantalla) ── */
 .home-location {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-4) var(--space-3);
   background: var(--background-surface);
   border: none;
-  border-top: 1px solid var(--border-subtle);
   color: var(--content-primary);
   cursor: pointer;
   flex-shrink: 0;
@@ -2940,6 +2968,16 @@ body {
 .venues-section__loc {
   font: var(--text-label-s);
   color: var(--content-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.venues-section__loc svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
 }
 
 .venue-toolbar {
@@ -2973,6 +3011,44 @@ body {
   border-color: var(--border-brand);
   color: var(--content-brand);
   background: var(--event-classic-surface);
+}
+
+/* Sheet compacto de ordenación: lista de opciones, tocar aplica y cierra */
+.sort-options {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--space-4);
+}
+
+.sort-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-1);
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  background: none;
+  color: var(--content-primary);
+  font: var(--text-body-m);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sort-option:last-child {
+  border-bottom: none;
+}
+
+.sort-option.is-active {
+  color: var(--content-brand);
+  font: var(--text-label-l);
+}
+
+.sort-option svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 /* Toggle "ocultar completos" */
@@ -3344,34 +3420,6 @@ body {
   flex-shrink: 0;
 }
 
-/* Botón estrella sobre la foto de la tarjeta */
-.fav-btn {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: var(--radius-full);
-  background: rgba(5, 7, 14, 0.55);
-  color: var(--neutral-0);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  backdrop-filter: blur(2px);
-  transition: transform 0.12s ease, color 0.15s ease;
-}
-
-.fav-btn:active { transform: scale(0.9); }
-.fav-btn .star-icon { width: 19px; height: 19px; opacity: 0.9; }
-
-.fav-btn.is-fav {
-  color: var(--interactive-primary);
-}
-
-.fav-btn.is-fav .star-icon { opacity: 1; }
-
 /* La tarjeta guardada gana un borde dorado */
 .event-card.is-fav {
   border-color: var(--interactive-primary);
@@ -3388,7 +3436,7 @@ body {
 
 .venue-card__saved .star-icon { width: 13px; height: 13px; }
 
-/* El badge de estado se mueve a la esquina inferior izquierda (la estrella ocupa la superior derecha) */
+/* El badge de estado vive en la esquina inferior izquierda de la foto */
 .venue-card__status {
   top: auto;
   right: auto;
@@ -3396,30 +3444,42 @@ body {
   bottom: var(--space-3);
 }
 
-/* Botón guardar en el detalle del sitio (sobre la cabecera) */
-.venue-fav {
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  border-radius: var(--radius-full);
-  background: rgba(5, 7, 14, 0.6);
-  color: var(--neutral-0);
-  font: var(--text-label-m);
-  cursor: pointer;
-  backdrop-filter: blur(2px);
-  box-shadow: var(--shadow-2);
+/* Botón guardar en el detalle del sitio, junto al nombre */
+.venue-detail__titlebar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
-.venue-fav .star-icon { width: 18px; height: 18px; }
+.venue-detail__titlebar .venue-detail__name {
+  flex: 1;
+  min-width: 0;
+}
 
-.venue-fav.is-fav {
-  background: var(--interactive-primary);
-  color: var(--interactive-on-primary);
+.venue-name-fav {
+  width: 40px;
+  height: 40px;
+  margin-top: var(--space-2);
+  flex-shrink: 0;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-full);
+  background: var(--background-surface);
+  color: var(--content-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, color 0.15s ease;
+}
+
+.venue-name-fav:active { transform: scale(0.9); }
+
+.venue-name-fav .star-icon { width: 20px; height: 20px; }
+
+.venue-name-fav.is-fav {
+  color: var(--interactive-primary);
+  border-color: var(--interactive-primary);
 }
 
 /* Banner prioritario en la lista de sitios de un partido */
@@ -3467,17 +3527,23 @@ body {
   color: var(--interactive-on-primary);
 }
 
-/* Indicador "en un sitio guardado" en el feed y el hero */
+/* Indicador "en un sitio guardado": en la fila superior de la tarjeta y en el hero */
 .fav-flag {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font: var(--text-label-s);
   color: var(--interactive-primary);
-  margin-bottom: var(--space-2);
+  min-width: 0;
 }
 
-.fav-flag .star-icon { width: 14px; height: 14px; }
+.fav-flag span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fav-flag .star-icon { width: 14px; height: 14px; flex-shrink: 0; }
 
 .home-hero__fav {
   display: inline-flex;

@@ -58,7 +58,6 @@ const App = {
       'location-overlay', 'location-sheet', 'location-content',
       'venue-opts-overlay', 'venue-opts-sheet', 'venue-opts-content',
       'profile-overlay', 'profile-sheet', 'profile-content',
-      'btn-profile',
     ];
     ids.forEach((id) => { this.els[id] = document.getElementById(id); });
   },
@@ -75,8 +74,7 @@ const App = {
       if (e.target.closest('[data-nav-back]')) this.navBack();
     });
 
-    // Perfil
-    this.els['btn-profile'].addEventListener('click', () => this.openProfile());
+    // Perfil (la tarjeta que lo abre vive en Mis entradas, con delegación)
     this.els['profile-overlay'].addEventListener('click', () => this.closeProfile());
     this.els['profile-content'].addEventListener('click', (e) => {
       if (e.target.closest('[data-profile-action="close"]')) this.closeProfile();
@@ -126,8 +124,9 @@ const App = {
       else if (action === 'done') { this.closeTicket(); }
     });
 
-    // Mis entradas → reabrir ticket
+    // Mis entradas → perfil / reabrir ticket
     this.els['tickets-content'].addEventListener('click', (e) => {
+      if (e.target.closest('[data-open-profile]')) { this.openProfile(); return; }
       const item = e.target.closest('[data-ticket-id]');
       if (item) {
         const t = this.state.tickets.find((x) => x.id === item.dataset.ticketId);
@@ -419,8 +418,7 @@ const App = {
     const fav = this.isFavorite(venueId);
     btn.classList.toggle('is-fav', fav);
     btn.setAttribute('aria-pressed', String(fav));
-    const label = btn.querySelector('.venue-fav__label');
-    if (label) label.textContent = fav ? 'Guardado' : 'Guardar';
+    btn.setAttribute('aria-label', fav ? 'Quitar de guardados' : 'Guardar este sitio');
   },
 
   /* ¿Este partido se puede ver en alguno de mis sitios guardados? (según ubicación) */
@@ -560,7 +558,7 @@ const App = {
       <div class="venues-section">
         <div class="venues-section__head">
           <h2 class="home-section-title" style="margin:0">Dónde verlo</h2>
-          <span class="venues-section__loc">📍 ${label}</span>
+          <span class="venues-section__loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>${label}</span>
         </div>
         ${priorityBanner}
         ${toolbar}
@@ -590,7 +588,6 @@ const App = {
         <div class="venue-card__media venue-card__media--${v.category}">
           <img class="venue-card__img" src="${v.image}" alt="" loading="lazy" onerror="this.remove()">
           <span class="venue-badge venue-badge--${v.category} venue-card__badge">${SPACE_TYPE_LABELS[v.spaceType]}</span>
-          <button type="button" class="fav-btn${fav ? ' is-fav' : ''}" data-fav-toggle="${v.id}" aria-pressed="${fav}" aria-label="${fav ? 'Quitar de favoritos' : 'Guardar como favorito'}">${this.starIcon()}</button>
           ${statusBadge}
         </div>
         <div class="event-card__body">
@@ -613,7 +610,9 @@ const App = {
 
   /* ============================ Ordenar / filtrar sitios ============================ */
 
-  openVenueOpts() {
+  openVenueOpts(mode) {
+    // Dos sheets diferenciados sobre el mismo contenedor: 'sort' u 'filters'
+    this.state.venueOptsMode = mode === 'filters' ? 'filters' : 'sort';
     this.state.venueOptsDraft = {
       sort: this.state.venueSort,
       filters: {
@@ -634,22 +633,33 @@ const App = {
 
   renderVenueOpts() {
     const d = this.state.venueOptsDraft;
+
+    // Sheet compacto de ordenación: elegir una opción aplica y cierra
+    if (this.state.venueOptsMode === 'sort') {
+      this.els['venue-opts-content'].innerHTML = `
+        <div class="filter-sheet__header">
+          <h2 class="filter-sheet__title" id="venue-opts-title">Ordenar por</h2>
+        </div>
+
+        <div class="sort-options" role="listbox" aria-label="Ordenar sitios por">
+          ${Object.entries(VENUE_SORTS).map(([k, lbl]) => `
+            <button type="button" class="sort-option${d.sort === k ? ' is-active' : ''}" data-sort="${k}" role="option" aria-selected="${d.sort === k}">
+              <span>${lbl}</span>
+              ${d.sort === k ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>' : ''}
+            </button>
+          `).join('')}
+        </div>
+      `;
+      return;
+    }
+
     const ratingChips = [
       { v: 0, l: 'Todas' }, { v: 3, l: '3+' }, { v: 4, l: '4+' }, { v: 4.5, l: '4,5+' },
     ];
     this.els['venue-opts-content'].innerHTML = `
       <div class="filter-sheet__header">
-        <h2 class="filter-sheet__title" id="venue-opts-title">Ordenar y filtrar</h2>
+        <h2 class="filter-sheet__title" id="venue-opts-title">Filtrar sitios</h2>
         <button type="button" class="filter-sheet__clear" data-venue-opts-action="clear">Limpiar</button>
-      </div>
-
-      <div class="filter-group">
-        <h3 class="filter-group__title">Ordenar por</h3>
-        <div class="filter-chips">
-          ${Object.entries(VENUE_SORTS).map(([k, lbl]) => `
-            <button type="button" class="filter-chip${d.sort === k ? ' is-active' : ''}" data-sort="${k}">${lbl}</button>
-          `).join('')}
-        </div>
       </div>
 
       <div class="filter-group">
@@ -678,9 +688,9 @@ const App = {
         </div>
       </div>
 
-      <div class="filter-sheet__footer">
+      <div class="filter-sheet__footer btn-group">
         <button type="button" class="btn btn--primary btn--block" data-venue-opts-action="apply">Ver sitios</button>
-        <button type="button" class="btn btn--ghost btn--block" data-venue-opts-action="close" style="margin-top: var(--space-3)">Cerrar</button>
+        <button type="button" class="btn btn--secondary btn--block" data-venue-opts-action="close">Cerrar</button>
       </div>
     `;
   },
@@ -692,14 +702,14 @@ const App = {
     if (action === 'close') { this.closeVenueOpts(); return; }
     if (action === 'apply') { this.applyVenueOpts(); return; }
     if (action === 'clear') {
-      d.sort = 'distance';
       d.filters = { spaceType: [], hideFull: false, minRating: 0 };
       this.renderVenueOpts();
       return;
     }
 
+    // En el sheet de ordenación, elegir una opción aplica y cierra directamente
     const sort = e.target.closest('[data-sort]')?.dataset.sort;
-    if (sort) { d.sort = sort; this.renderVenueOpts(); return; }
+    if (sort) { d.sort = sort; this.applyVenueOpts(); return; }
 
     if (e.target.closest('[data-filter-full]')) {
       d.filters.hideFull = !d.filters.hideFull;
@@ -732,7 +742,7 @@ const App = {
   },
 
   clearVenueOpts(applyNow = false) {
-    this.state.venueSort = 'distance';
+    // Solo limpia filtros; la ordenación elegida se mantiene
     this.state.venueFilters = { spaceType: [], hideFull: false, minRating: 0 };
     if (applyNow) this.renderMatchDetail();
   },
@@ -772,13 +782,13 @@ const App = {
         <img class="venue-hero__img" src="${v.image}" alt="" onerror="this.remove()">
         <div class="venue-hero__grad"></div>
         <span class="venue-badge venue-badge--${v.category} venue-hero__badge">${SPACE_TYPE_LABELS[v.spaceType]}</span>
-        <button type="button" class="venue-fav${fav ? ' is-fav' : ''}" id="fav-toggle-detail" data-fav-toggle="${v.id}" aria-pressed="${fav}">
-          ${this.starIcon()}<span class="venue-fav__label">${fav ? 'Guardado' : 'Guardar'}</span>
-        </button>
       </div>
 
       <div class="venue-body">
-        <h1 class="venue-detail__name">${v.name}</h1>
+        <div class="venue-detail__titlebar">
+          <h1 class="venue-detail__name">${v.name}</h1>
+          <button type="button" class="venue-name-fav${fav ? ' is-fav' : ''}" id="fav-toggle-detail" data-fav-toggle="${v.id}" aria-pressed="${fav}" aria-label="${fav ? 'Quitar de guardados' : 'Guardar este sitio'}">${this.starIcon()}</button>
+        </div>
         <div class="venue-rating-row">
           ${this.starsHtml(v.rating)}
           <strong>${v.rating.toFixed(1)}</strong>
@@ -1072,10 +1082,28 @@ const App = {
 
   /* ============================ Mis entradas ============================ */
 
+  /* Tarjeta de perfil al inicio de Mis entradas (abre el sheet de perfil) */
+  profileCardHtml() {
+    const u = this.state.authUser;
+    return `
+      <button type="button" class="profile-card" data-open-profile>
+        <span class="profile-card__avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+        </span>
+        <span class="profile-card__text">
+          <strong class="profile-card__name">${u.firstName} ${u.lastName}</strong>
+          <span class="profile-card__meta">${u.area} · ${u.city}</span>
+        </span>
+        <svg class="profile-card__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    `;
+  },
+
   renderTickets() {
     const content = this.els['tickets-content'];
     if (!this.state.tickets.length) {
       content.innerHTML = `
+        ${this.profileCardHtml()}
         <div class="tickets-empty">
           <div class="tickets-empty__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M15 6v12"/></svg>
@@ -1089,6 +1117,7 @@ const App = {
     }
 
     content.innerHTML = `
+      ${this.profileCardHtml()}
       <div class="tickets-list">
         ${this.state.tickets.map((t) => `
           <article class="ticket-mini ticket-mini--${t.category}" data-ticket-id="${t.id}" role="button" tabindex="0">

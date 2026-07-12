@@ -359,8 +359,10 @@ function getDefaultMatch() {
 }
 
 function filterFixtures({ team = 'men', competitionId = null } = {}) {
+  // `team` admite un id ('men') o un array de ids (['men','women'])
+  const teams = Array.isArray(team) ? team : [team];
   return FIXTURES.filter((f) => {
-    if (f.team !== team) return false;
+    if (!teams.includes(f.team)) return false;
     if (competitionId && f.competitionId !== competitionId) return false;
     return true;
   })
@@ -422,7 +424,7 @@ function crestHtml(teamName, abbr, modifier, extraStyle) {
   const style = extraStyle ? ` style="${extraStyle}"` : '';
   return `<span class="match-card__crest match-card__crest--${modifier}"${style}>${
     logo
-      ? `<img src="${logo}" alt="" class="match-card__crest-img" loading="lazy" onload="this.parentElement.style.background='#fff'" onerror="this.style.display='none'">`
+      ? `<img src="${logo}" alt="" class="match-card__crest-img" loading="lazy" onload="this.parentElement.classList.add('has-logo')" onerror="this.style.display='none'">`
       : ''
   }${abbr}</span>`;
 }
