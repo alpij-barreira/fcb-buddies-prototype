@@ -3469,8 +3469,9 @@ body {
 .venue-aforo--soon { color: var(--feedback-warning-content); }
 .venue-aforo--full { color: var(--feedback-danger-content); }
 
+/* Mismo hueco arriba (dirección) que abajo (botones) */
 .venue-urgency {
-  margin-bottom: var(--space-4);
+  margin: var(--space-4) 0;
 }
 
 .venue-card__rating {
@@ -3570,6 +3571,12 @@ body {
   background: var(--interactive-primary);
   color: var(--interactive-on-primary);
   border-color: transparent;
+}
+
+/* Sitio completo: lista de espera (contorno acentuado, sigue siendo accionable) */
+.venue-action--waitlist {
+  border-color: var(--interactive-primary);
+  color: var(--interactive-primary);
 }
 
 .venue-action:disabled {

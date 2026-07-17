@@ -138,7 +138,10 @@ const App = {
       if (mapAction === 'expand') { this.expandMap(); return; }
       if (mapAction === 'collapse') { this.collapseMap(); return; }
       const reserveOpen = e.target.closest('[data-reserve-open]')?.dataset.reserveOpen;
-      if (reserveOpen) this.openReserve(reserveOpen);
+      if (reserveOpen) { this.openReserve(reserveOpen); return; }
+      // Sitio completo: apuntarse a la lista de espera (demo, sin backend real)
+      const waitlist = e.target.closest('[data-waitlist]');
+      if (waitlist) this.flashTicketButton(waitlist, 'Te avisaremos');
     });
 
     // Sheet de reserva
@@ -945,7 +948,10 @@ const App = {
             <span class="venue-action__label">${fav ? 'Guardado' : 'Guardar sitio'}</span>
           </button>
           ${full
-            ? `<button type="button" class="venue-action" disabled>Completo</button>`
+            ? `<button type="button" class="venue-action venue-action--waitlist" data-waitlist>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                Lista de espera
+              </button>`
             : `<button type="button" class="venue-action venue-action--primary" data-reserve-open="${v.id}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/></svg>
                 Reservar
