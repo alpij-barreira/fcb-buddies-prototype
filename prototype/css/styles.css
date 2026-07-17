@@ -64,10 +64,10 @@ body {
     display: block;
     position: relative;
     flex-shrink: 0;
-    /* Proporción tipo iPhone 17 (402×874 pt ≈ 0.46); el alto manda y el ancho
-       se deriva del aspecto, así deja de verse "ancho de más" en PC */
+    /* Proporción tipo iPhone algo más ancho (430×882 ≈ 0.49): el alto manda y
+       el ancho se deriva del aspecto — más natural en PC sin verse estrecho */
     height: min(860px, calc(100dvh - var(--space-5) * 2));
-    aspect-ratio: 402 / 874;
+    aspect-ratio: 430 / 882;
     padding: 10px;
     background: var(--neutral-950);
     border: 1px solid var(--neutral-700);
