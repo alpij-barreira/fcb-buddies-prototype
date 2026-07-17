@@ -2129,11 +2129,12 @@ body {
 
 /* ── Hero del detalle de partido ── */
 .match-detail__hero {
-  /* Degradado cálido (grana), distinto del hero destacado del home (blau→grana) */
+  /* Degradado cálido (grana), distinto del hero destacado del home (blau→grana).
+     Compacidad igual que el partido destacado del home (padding/márgenes) */
   background: linear-gradient(150deg, var(--grana-600), var(--grana-900));
   color: var(--content-on-brand);
   border-radius: var(--radius-xl);
-  padding: var(--space-6) var(--space-5);
+  padding: var(--space-4);
   text-align: center;
   box-shadow: var(--shadow-2);
 }
@@ -2144,7 +2145,7 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--gold-300);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
 }
 
 .match-detail__teams {
@@ -2152,7 +2153,7 @@ body {
   align-items: flex-start;
   justify-content: center;
   gap: var(--space-4);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
 }
 
 .mdh-team {
