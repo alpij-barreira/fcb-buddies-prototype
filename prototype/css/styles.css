@@ -2058,7 +2058,9 @@ body {
   font: var(--text-label-l);
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* nombres largos a dos líneas, sin puntos suspensivos */
+  /* Hasta 3 líneas: los nombres largos (equipos femeninos) caben enteros sin
+     recurrir a puntos suspensivos */
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 
