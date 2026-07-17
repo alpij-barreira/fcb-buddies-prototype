@@ -66,11 +66,12 @@ body {
     flex-shrink: 0;
     /* Marco rígido: tamaño fijo que SOLO depende de la ventana, nunca del
        contenido. El alto se ancla al viewport (tope 860px) y el ancho se
-       CALCULA del alto con proporción iPhone (430/882 ≈ 0.49); usamos calc,
-       no aspect-ratio, para que el contenido no pueda ensanchar el marco. */
+       CALCULA del alto con una proporción de iPhone ancho (1:2 = 0.50, más
+       espacio horizontal); usamos calc, no aspect-ratio, para que el
+       contenido no pueda ensanchar el marco. */
     --phone-h: min(860px, calc(100dvh - var(--space-5) * 2));
     height: var(--phone-h);
-    width: calc(var(--phone-h) * 430 / 882);
+    width: calc(var(--phone-h) / 2);
     padding: 10px;
     background: var(--neutral-950);
     border: 1px solid var(--neutral-700);
@@ -2047,7 +2048,9 @@ body {
 
 .mfc-team__name {
   font: var(--text-label-l);
+  min-width: 0;
   overflow: hidden;
+  overflow-wrap: anywhere; /* parte la palabra si hiciera falta, nunca recorta */
   display: -webkit-box;
   -webkit-line-clamp: 2; /* nombres largos a dos líneas, sin puntos suspensivos */
   -webkit-box-orient: vertical;
