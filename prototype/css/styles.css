@@ -50,7 +50,8 @@ body {
   display: contents;
 }
 
-.phone-statusbar {
+.phone-statusbar,
+.phone-island {
   display: none;
 }
 
@@ -64,18 +65,12 @@ body {
     display: block;
     position: relative;
     flex-shrink: 0;
-    /* Marco rígido: tamaño fijo que SOLO depende de la ventana, nunca del
-       contenido. El alto se ancla al viewport (tope 860px) y el ancho se
-       CALCULA del alto con una proporción de iPhone ancho (1:2 = 0.50, más
-       espacio horizontal); usamos calc, no aspect-ratio, para que el
-       contenido no pueda ensanchar el marco. */
-    --phone-h: min(860px, calc(100dvh - var(--space-5) * 2));
-    height: var(--phone-h);
-    width: calc(var(--phone-h) / 2);
-    padding: 10px;
+    width: min(calc(var(--app-max-width) + 24px), 100%);
+    height: min(880px, calc(100dvh - var(--space-5) * 2));
+    padding: 12px;
     background: var(--neutral-950);
     border: 1px solid var(--neutral-700);
-    border-radius: 52px;
+    border-radius: 56px;
     box-shadow: var(--shadow-3), 0 24px 80px rgba(5, 7, 14, 0.55);
   }
 
@@ -97,7 +92,7 @@ body {
     width: 100%;
     height: 100%;
     min-height: 0;
-    border-radius: 42px;
+    border-radius: 44px;
     padding-top: 44px; /* hueco para la barra de estado simulada */
   }
 
@@ -130,6 +125,19 @@ body {
   .phone-statusbar__icons svg {
     height: 11px;
     width: auto;
+  }
+
+  .phone-island {
+    display: block;
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 118px;
+    height: 30px;
+    border-radius: var(--radius-full);
+    background: var(--neutral-950);
+    z-index: 3001;
   }
 
 }
@@ -2048,9 +2056,7 @@ body {
 
 .mfc-team__name {
   font: var(--text-label-l);
-  min-width: 0;
   overflow: hidden;
-  overflow-wrap: anywhere; /* parte la palabra si hiciera falta, nunca recorta */
   display: -webkit-box;
   -webkit-line-clamp: 2; /* nombres largos a dos líneas, sin puntos suspensivos */
   -webkit-box-orient: vertical;
