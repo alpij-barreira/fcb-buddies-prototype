@@ -681,28 +681,36 @@ const App = {
     `;
   },
 
+  /* Badge de estado de ocupación, con el estilo píldora de los demás badges */
+  statusBadgeHtml(urgency) {
+    if (urgency === 'full') {
+      return `<span class="venue-card__status venue-card__status--full">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.5 5.5l13 13"/></svg>
+        Completo
+      </span>`;
+    }
+    if (urgency === 'soon') {
+      return `<span class="venue-card__status venue-card__status--soon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        Últimas plazas
+      </span>`;
+    }
+    return '';
+  },
+
   venueCardHtml(v) {
     const urgency = this.venueUrgency(v);
-    const free = Math.max(0, v.capacity - v.reserved);
     const fav = this.isFavorite(v.id);
-    const statusBadge =
-      urgency === 'full'
-        ? '<span class="venue-card__status venue-card__status--full">Completo</span>'
-        : urgency === 'soon'
-          ? '<span class="venue-card__status venue-card__status--soon">Últimas plazas</span>'
-          : '';
-    const capacityText =
-      urgency === 'full'
-        ? `${v.reserved}/${v.capacity} · completo`
-        : urgency === 'soon'
-          ? `Quedan ${free} plazas`
-          : `${v.reserved}/${v.capacity} plazas`;
+    // Las plazas se muestran siempre igual («X/Y plazas»); solo cambia el color
+    const capacityText = `${v.reserved}/${v.capacity} plazas`;
     return `
       <article class="event-card venue-card${fav ? ' is-fav' : ''}" data-venue-id="${v.id}" role="button" tabindex="0">
         <div class="venue-card__media venue-card__media--${v.category}">
           <img class="venue-card__img" src="${v.image}" alt="" loading="lazy" onerror="this.remove()">
-          ${this.spaceBadgeHtml(v, 'venue-card__badge')}
-          ${statusBadge}
+          <span class="venue-card__badges">
+            ${this.spaceBadgeHtml(v)}
+            ${this.statusBadgeHtml(urgency)}
+          </span>
         </div>
         <div class="event-card__body">
           ${fav ? '<span class="venue-card__saved">' + this.starIcon() + ' Guardado</span>' : ''}
@@ -998,6 +1006,28 @@ const App = {
     MapView.setInteractive(true);
     MapView.invalidateSize();
     this.els['mini-nav'].classList.add('is-hidden');
+    this.showVenueRoute(wrap);
+  },
+
+  /* Ruta hasta el sitio en el mapa expandido, con chip de distancia/tiempo */
+  async showVenueRoute(wrap) {
+    const v = this.getVenue(this.state.selectedVenueId);
+    if (!v) return;
+    let chip = wrap.querySelector('.venue-route-chip');
+    if (!chip) {
+      chip = document.createElement('div');
+      chip.className = 'venue-route-chip';
+      wrap.appendChild(chip);
+    }
+    const carIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11M5 11h14M5 11a2 2 0 0 0-2 2v4h2m14-6a2 2 0 0 1 2 2v4h-2m-14 0a2 2 0 1 0 4 0m-4 0h4m6 0a2 2 0 1 0 4 0m-4 0h4"/></svg>';
+    chip.innerHTML = `${carIcon}<span>Calculando ruta…</span>`;
+    chip.hidden = false;
+
+    const info = await MapView.showRoute(this.getSearchCenter(), v);
+    if (!info || !this.state.mapExpanded) return;
+    const dist = formatDistance(info.distanceKm);
+    const time = info.durationMin ? `~${info.durationMin} min · ` : '';
+    chip.innerHTML = `${carIcon}<span><strong>${time}${dist}</strong> desde ${this.getSearchLabel()}${info.approx ? ' (aprox.)' : ''}</span>`;
   },
 
   collapseMap() {
@@ -1006,10 +1036,16 @@ const App = {
       wrap.classList.remove('is-expanded');
       wrap.querySelector('.venue-map__expand').hidden = false;
       wrap.querySelector('.venue-map__close').hidden = true;
+      const chip = wrap.querySelector('.venue-route-chip');
+      if (chip) chip.hidden = true;
     }
     this.state.mapExpanded = false;
+    MapView.clearRoute();
     MapView.setInteractive(false);
     MapView.invalidateSize();
+    // Restaurar el encuadre del thumbnail centrado en el sitio
+    const v = this.getVenue(this.state.selectedVenueId);
+    if (v) MapView.showSingle(v, 15);
     this.els['mini-nav'].classList.remove('is-hidden');
   },
 

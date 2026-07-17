@@ -71,6 +71,13 @@ const Home = {
     return teams.flatMap((t) => getCompetitionsForTeam(t));
   },
 
+  /* «Competición · Ronda» cuando la ronda es eliminatoria (no una jornada) */
+  compLine(match) {
+    const comp = COMPETITIONS[match.competitionId].label;
+    if (match.round && !/^Jornada/i.test(match.round)) return `${comp} · ${match.round}`;
+    return comp;
+  },
+
   pinIcon() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>';
   },
@@ -93,7 +100,7 @@ const Home = {
   },
 
   renderHero(match) {
-    const comp = COMPETITIONS[match.competitionId].label;
+    const comp = this.compLine(match);
     const teamTag = match.team === 'women' ? 'Femení' : 'Masculino';
     const datetime = formatMatchDatetime(match);
     return `
@@ -120,7 +127,7 @@ const Home = {
   },
 
   renderFeedCard(match) {
-    const comp = COMPETITIONS[match.competitionId].label;
+    const comp = this.compLine(match);
     // La fecha la dan los separadores del feed; la tarjeta solo muestra la hora
     const timeLabel = match.status === 'tbc' || !match.time ? '--:--' : match.time;
 

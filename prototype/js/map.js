@@ -172,4 +172,71 @@ const MapView = {
     this.map.off('click');
     this.map.on('click', callback);
   },
+
+  /* ── Ruta origen → sitio (Cómo llegar) ── */
+
+  routeLayers: [],
+
+  clearRoute() {
+    if (!this.map) return;
+    this.routeLayers.forEach((l) => this.map.removeLayer(l));
+    this.routeLayers = [];
+  },
+
+  /**
+   * Dibuja la ruta más rápida desde el origen de búsqueda hasta el sitio.
+   * Usa OSRM público; si falla o tarda, cae a una línea recta discontinua.
+   * @returns {Promise<{distanceKm:number, durationMin:number|null, approx:boolean}>}
+   */
+  async showRoute(origin, dest) {
+    if (!this.map) return null;
+    this.clearRoute();
+
+    const originMarker = L.circleMarker([origin.lat, origin.lng], {
+      radius: 8,
+      fillColor: '#0a5ba3',
+      color: '#ffffff',
+      weight: 3,
+      fillOpacity: 1,
+    }).addTo(this.map);
+    this.routeLayers.push(originMarker);
+
+    const drawLine = (coords, dashed) => {
+      // Halo claro debajo para que la ruta se lea sobre cualquier tile
+      const halo = L.polyline(coords, { color: '#ffffff', weight: 8, opacity: 0.85 }).addTo(this.map);
+      const line = L.polyline(coords, {
+        color: '#0a5ba3',
+        weight: 4,
+        opacity: 0.95,
+        dashArray: dashed ? '8 8' : null,
+      }).addTo(this.map);
+      this.routeLayers.push(halo, line);
+      this.map.fitBounds(line.getBounds().pad(0.2), { animate: true });
+    };
+
+    const fallback = () => {
+      drawLine([[origin.lat, origin.lng], [dest.lat, dest.lng]], true);
+      const km = haversineKm(origin.lat, origin.lng, dest.lat, dest.lng);
+      return { distanceKm: km, durationMin: null, approx: true };
+    };
+
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`;
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 4000);
+      const res = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(timer);
+      const data = await res.json();
+      const route = data.routes && data.routes[0];
+      if (!route) return fallback();
+      drawLine(route.geometry.coordinates.map(([lng, lat]) => [lat, lng]), false);
+      return {
+        distanceKm: route.distance / 1000,
+        durationMin: Math.max(1, Math.round(route.duration / 60)),
+        approx: false,
+      };
+    } catch (e) {
+      return fallback();
+    }
+  },
 };

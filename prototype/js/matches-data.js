@@ -472,10 +472,15 @@ const TEAM_LOGOS = {
   'Atlético Madrid':           _E + '1068.png',
   'Atlético Madrid Femenino':  _E + '1068.png',
   'Real Sociedad':             _E + '89.png',
+  'Sevilla FC':                _E + '243.png',
   'Chelsea FC Women':          _E + '363.png',
+  'Madrid CFF':                'https://r2.thesportsdb.com/images/media/team/badge/tuo56b1753205791.png',
   'Levante UD':                'https://r2.thesportsdb.com/images/media/team/badge/xwtxsx1473503739.png',
   'UDG Tenerife':              'https://upload.wikimedia.org/wikipedia/en/thumb/1/12/UD_Granadilla_Tenerife.png/250px-UD_Granadilla_Tenerife.png',
 };
+
+/* Logos oscuros que necesitan caja clara para verse sobre la tarjeta */
+const LIGHT_BG_TEAMS = ['Madrid CFF'];
 
 /**
  * Genera el HTML del escudo de un equipo.
@@ -494,7 +499,8 @@ function crestHtml(teamName, abbr, modifier, extraStyle) {
     </span>`;
   }
   const logo = TEAM_LOGOS[teamName];
-  return `<span class="match-card__crest match-card__crest--${modifier}"${style}>${
+  const lightBg = LIGHT_BG_TEAMS.includes(teamName) ? ' match-card__crest--light' : '';
+  return `<span class="match-card__crest match-card__crest--${modifier}${lightBg}"${style}>${
     logo
       ? `<img src="${logo}" alt="" class="match-card__crest-img" loading="lazy" onload="this.parentElement.classList.add('has-logo')" onerror="this.style.display='none'">`
       : ''
