@@ -6,12 +6,25 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#080b1a">
   <title>Barça Buddies — Vive el partido en compañía</title>
-  <link rel="stylesheet" href="css/tokens.css?v=5">
-  <link rel="stylesheet" href="css/styles.css?v=5">
+  <link rel="stylesheet" href="css/tokens.css?v=6">
+  <link rel="stylesheet" href="css/styles.css?v=6">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 </head>
 <body>
+  <!-- Marco de smartphone simulado (solo visible en pantallas anchas) -->
+  <div class="phone">
   <div id="app">
+
+    <!-- Barra de estado + isla dinámica simuladas (solo con el marco) -->
+    <div class="phone-statusbar" aria-hidden="true">
+      <span class="phone-statusbar__time">9:41</span>
+      <span class="phone-statusbar__icons">
+        <svg viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="0.8"/><rect x="5" y="5.5" width="3" height="6.5" rx="0.8"/><rect x="10" y="3" width="3" height="9" rx="0.8"/><rect x="15" y="0.5" width="3" height="11.5" rx="0.8"/></svg>
+        <svg viewBox="0 0 16 12" fill="currentColor"><path d="M8 9.6a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4zM8 5.2c1.8 0 3.4.7 4.6 1.9l-1.5 1.5A4.5 4.5 0 0 0 8 7.4c-1.2 0-2.3.5-3.1 1.2L3.4 7.1A6.5 6.5 0 0 1 8 5.2zM8 .8c3 0 5.7 1.2 7.7 3.1l-1.5 1.5A8.7 8.7 0 0 0 8 3 8.7 8.7 0 0 0 1.8 5.4L.3 3.9A10.9 10.9 0 0 1 8 .8z"/></svg>
+        <svg viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="15" height="8" rx="1.6" fill="currentColor"/><path d="M23.5 4v4a2.2 2.2 0 0 0 0-4z" fill="currentColor" opacity="0.5"/></svg>
+      </span>
+    </div>
+    <div class="phone-island" aria-hidden="true"></div>
 
     <!-- ===================== HOME · Feed de partidos ===================== -->
     <section id="screen-home" class="screen screen-home is-active" aria-label="Partidos">
@@ -63,6 +76,10 @@
     <!-- ===================== Mis entradas ===================== -->
     <section id="screen-tickets" class="screen screen-tickets" aria-label="Mis entradas">
       <header class="app-header">
+        <button type="button" class="header-profile" id="header-profile" data-open-profile aria-label="Tu perfil">
+          <span class="header-profile__avatar" id="header-profile-initial" aria-hidden="true">·</span>
+          <span class="header-profile__name" id="header-profile-name"></span>
+        </button>
         <div class="app-header__brand">
           <span class="app-header__title">Mis entradas</span>
         </div>
@@ -125,12 +142,13 @@
     </nav>
 
   </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="js/matches-data.js?v=5"></script>
-  <script src="js/data.js?v=5"></script>
-  <script src="js/map.js?v=5"></script>
-  <script src="js/matches.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/matches-data.js?v=6"></script>
+  <script src="js/data.js?v=6"></script>
+  <script src="js/map.js?v=6"></script>
+  <script src="js/matches.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
 </body>
 </html>

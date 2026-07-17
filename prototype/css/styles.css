@@ -28,6 +28,118 @@ body {
   background: var(--background-canvas);
   position: relative;
   overflow: hidden;
+  /* Convierte a #app en containing block de los hijos position:fixed
+     (overlays, sheets, mini-nav) para que queden recortados dentro del marco */
+  transform: translateZ(0);
+}
+
+/* Simulación móvil: sin barras de scroll de escritorio en toda la app */
+#app *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+#app * {
+  scrollbar-width: none;
+}
+
+/* ── Marco de smartphone simulado ──
+   En móvil real (< 520px) el marco desaparece y la app ocupa toda la pantalla. */
+.phone {
+  display: contents;
+}
+
+.phone-statusbar,
+.phone-island {
+  display: none;
+}
+
+@media (min-width: 520px) {
+  body {
+    align-items: center;
+    padding: var(--space-5);
+  }
+
+  .phone {
+    display: block;
+    position: relative;
+    flex-shrink: 0;
+    width: min(calc(var(--app-max-width) + 24px), 100%);
+    height: min(880px, calc(100dvh - var(--space-5) * 2));
+    padding: 12px;
+    background: var(--neutral-950);
+    border: 1px solid var(--neutral-700);
+    border-radius: 56px;
+    box-shadow: var(--shadow-3), 0 24px 80px rgba(5, 7, 14, 0.55);
+  }
+
+  /* Botones laterales del "hardware" */
+  .phone::before,
+  .phone::after {
+    content: '';
+    position: absolute;
+    right: -3px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: var(--neutral-700);
+  }
+
+  .phone::before { top: 176px; height: 64px; }
+  .phone::after { top: 120px; height: 36px; left: -3px; right: auto; border-radius: 2px 0 0 2px; }
+
+  #app {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border-radius: 44px;
+    padding-top: 44px; /* hueco para la barra de estado simulada */
+  }
+
+  .phone-statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 44px;
+    padding: 0 var(--space-8);
+    z-index: 3000;
+    pointer-events: none;
+    color: var(--content-primary);
+  }
+
+  .phone-statusbar__time {
+    font: var(--text-label-m);
+    letter-spacing: 0.02em;
+  }
+
+  .phone-statusbar__icons {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .phone-statusbar__icons svg {
+    height: 11px;
+    width: auto;
+  }
+
+  .phone-island {
+    display: block;
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 118px;
+    height: 30px;
+    border-radius: var(--radius-full);
+    background: var(--neutral-950);
+    z-index: 3001;
+  }
+
 }
 
 /* Screens */
@@ -902,7 +1014,7 @@ body {
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding: var(--space-3) var(--space-4) var(--space-8);
   transition: transform 0.3s ease;
-  max-height: 85dvh;
+  max-height: 85%;
   overflow-y: auto;
 }
 
@@ -1594,7 +1706,7 @@ body {
 
 /* Match modal */
 .match-modal {
-  max-height: 90dvh;
+  max-height: 90%;
   overflow-y: auto;
 }
 
@@ -2032,15 +2144,26 @@ body {
 }
 
 .venue-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   font: var(--text-label-s);
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  border: 1px solid;
+  box-shadow: var(--shadow-1);
 }
 
-.venue-badge--classic { background: var(--event-classic-surface); color: var(--blau-700); }
-.venue-badge--community { background: var(--event-community-surface); color: var(--grana-700); }
-.venue-badge--pena { background: var(--event-pena-surface); color: var(--gold-800); }
+.venue-badge svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* Texto claro sobre superficie oscura de categoría + borde del color de categoría */
+.venue-badge--classic { background: var(--event-classic-surface); color: var(--blau-100); border-color: var(--event-classic); }
+.venue-badge--community { background: var(--event-community-surface); color: var(--grana-100); border-color: var(--event-community); }
+.venue-badge--pena { background: var(--event-pena-surface); color: var(--gold-200); border-color: var(--event-pena); }
 
 /* ── Detalle de sitio ── */
 .venue-detail__head {
@@ -2176,21 +2299,6 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-}
-
-.venue-detail__cta {
-  margin-top: var(--space-2);
-}
-
-.venue-detail__as {
-  font: var(--text-caption);
-  color: var(--content-secondary);
-  text-align: center;
-  margin-bottom: var(--space-2);
-}
-
-.venue-detail__as strong {
-  color: var(--content-primary);
 }
 
 /* ── Sheet de reserva ── */
@@ -2551,70 +2659,48 @@ body {
 }
 
 /* ── Mis entradas ── */
-/* Tarjeta de perfil (abre el sheet de perfil) */
-.profile-card {
-  display: flex;
+/* Perfil integrado en la cabecera (arriba a la izquierda) */
+.header-profile {
+  display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  padding: var(--space-4);
-  margin-bottom: var(--space-4);
-  background: var(--background-surface);
+  gap: var(--space-2);
+  padding: var(--space-1);
+  padding-right: var(--space-3);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-1);
+  border-radius: var(--radius-full);
+  background: var(--background-raised);
   color: var(--content-primary);
   cursor: pointer;
-  text-align: left;
-  transition: transform 0.12s ease, box-shadow 0.15s ease;
+  transition: transform 0.12s ease, border-color 0.15s ease;
 }
 
-.profile-card:active {
-  transform: scale(0.99);
+.header-profile:hover {
+  border-color: var(--border-strong);
 }
 
-.profile-card__avatar {
-  width: 44px;
-  height: 44px;
+.header-profile:active {
+  transform: scale(0.96);
+}
+
+.header-profile__avatar {
+  width: 30px;
+  height: 30px;
   border-radius: var(--radius-full);
   background: var(--background-brand);
   color: var(--content-on-brand);
+  font: var(--text-label-m);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.profile-card__avatar svg {
-  width: 22px;
-  height: 22px;
-}
-
-.profile-card__text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-  flex: 1;
-}
-
-.profile-card__name {
-  font: var(--text-label-l);
+.header-profile__name {
+  font: var(--text-label-m);
+  max-width: 96px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.profile-card__meta {
-  font: var(--text-body-s);
-  color: var(--content-secondary);
-}
-
-.profile-card__chevron {
-  width: 18px;
-  height: 18px;
-  color: var(--content-tertiary);
-  flex-shrink: 0;
 }
 
 .tickets-list {
@@ -2953,7 +3039,7 @@ body {
 
 /* Calendario en sheet alto */
 .calendar-sheet {
-  max-height: 88dvh;
+  max-height: 88%;
 }
 
 /* ── Sección de sitios: cabecera + toolbar ── */
@@ -3570,4 +3656,123 @@ body {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;
+}
+
+/* ============================================================
+   PULIDO "APP MÓVIL REAL" — drag-scroll, transiciones y micro-feedback
+   ============================================================ */
+
+/* ── Drag-to-scroll con ratón ── */
+.drag-scroll {
+  cursor: grab;
+}
+
+.drag-scroll.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+  scroll-behavior: auto;
+}
+
+.drag-scroll.is-dragging * {
+  pointer-events: none;
+}
+
+/* ── Transición de entrada entre pantallas ── */
+.screen.is-active {
+  animation: screen-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Las pantallas de detalle entran desde la derecha (push de navegación móvil) */
+.screen-detail.is-active {
+  animation-name: screen-in-right;
+}
+
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes screen-in-right {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Entrada escalonada de las tarjetas de las listas ── */
+.matches-list > *,
+.tickets-list > * {
+  animation: card-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.matches-list > *:nth-child(1), .tickets-list > *:nth-child(1) { animation-delay: 0.03s; }
+.matches-list > *:nth-child(2), .tickets-list > *:nth-child(2) { animation-delay: 0.07s; }
+.matches-list > *:nth-child(3), .tickets-list > *:nth-child(3) { animation-delay: 0.11s; }
+.matches-list > *:nth-child(4), .tickets-list > *:nth-child(4) { animation-delay: 0.15s; }
+.matches-list > *:nth-child(5), .tickets-list > *:nth-child(5) { animation-delay: 0.19s; }
+.matches-list > *:nth-child(6), .tickets-list > *:nth-child(6) { animation-delay: 0.23s; }
+.matches-list > *:nth-child(7), .tickets-list > *:nth-child(7) { animation-delay: 0.27s; }
+.matches-list > *:nth-child(n+8), .tickets-list > *:nth-child(n+8) { animation-delay: 0.3s; }
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Micro-feedback táctil al pulsar ── */
+.event-card:active,
+.ticket-mini:active,
+.home-hero:active {
+  transform: scale(0.98);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.event-card,
+.ticket-mini,
+.home-hero,
+.btn {
+  transition: transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+/* ── Brillo que recorre el ticket al emitirse ── */
+.ticket-result.is-animating .ticket {
+  position: relative;
+  overflow: hidden;
+}
+
+.ticket-result.is-animating .ticket::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.28) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: ticket-shine 0.9s ease 0.6s both;
+  pointer-events: none;
+}
+
+@keyframes ticket-shine {
+  to { transform: translateX(120%); }
+}
+
+/* ── Accesibilidad: respetar la preferencia de menos movimiento ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dentro del marco de móvil las pantallas ocupan el alto del "dispositivo",
+   no del viewport. Va al final del archivo para ganar a las reglas con 100dvh. */
+@media (min-width: 520px) {
+  .screen { min-height: 100%; }
+  .screen-home,
+  .screen-detail,
+  .screen-tickets,
+  .screen-matches,
+  .discover { height: 100%; }
 }

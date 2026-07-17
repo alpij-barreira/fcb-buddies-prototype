@@ -39,12 +39,23 @@ const App = {
     this.cacheElements();
     this.loadFavorites();
     this.bindEvents();
+    this.initHeaderProfile();
+    this.initDragScroll();
     this.showScreen('home');
     this.updateMiniNav();
     this.updateTicketsBadge();
     this.updateLocationChip();
     // Primer arranque: pedir ubicación sobre el home ya montado
     this.openLocationModal({ firstRun: true });
+  },
+
+  initHeaderProfile() {
+    const u = this.state.authUser;
+    const initial = document.getElementById('header-profile-initial');
+    const name = document.getElementById('header-profile-name');
+    if (initial) initial.textContent = u.firstName.charAt(0);
+    if (name) name.textContent = u.firstName;
+    document.getElementById('header-profile')?.addEventListener('click', () => this.openProfile());
   },
 
   cacheElements() {
@@ -139,6 +150,85 @@ const App = {
     // Autoocultar mini-nav al hacer scroll
     ['home-content', 'match-detail-content', 'venue-detail-content', 'tickets-content']
       .forEach((id) => this.enableAutohide(this.els[id]));
+  },
+
+  /* ============================ Drag-to-scroll (simulación táctil) ============================ */
+
+  /* En escritorio, arrastrar con el ratón scrollea con inercia como en un móvil.
+     El touch real sigue usando el scroll nativo del navegador. */
+  initDragScroll() {
+    const ids = [
+      'home-content', 'match-detail-content', 'venue-detail-content', 'tickets-content',
+      'reserve-sheet', 'location-sheet', 'venue-opts-sheet', 'profile-sheet', 'ticket-overlay',
+    ];
+    ids.forEach((id) => this.enableDragScroll(this.els[id] || document.getElementById(id)));
+    ['home-filter-sheet', 'calendar-sheet'].forEach((id) => this.enableDragScroll(document.getElementById(id)));
+  },
+
+  enableDragScroll(el) {
+    if (!el || el._dragScrollBound) return;
+    el._dragScrollBound = true;
+    el.classList.add('drag-scroll');
+
+    let dragging = false;
+    let moved = false;
+    let lastY = 0;
+    let velocity = 0;
+    let lastT = 0;
+    let raf = null;
+
+    const stopInertia = () => { if (raf) { cancelAnimationFrame(raf); raf = null; } };
+
+    el.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      stopInertia();
+      dragging = true;
+      moved = false;
+      lastY = e.clientY;
+      velocity = 0;
+      lastT = performance.now();
+    });
+
+    el.addEventListener('pointermove', (e) => {
+      if (!dragging || e.pointerType !== 'mouse') return;
+      const dy = e.clientY - lastY;
+      if (!moved && Math.abs(dy) < 6) return; // umbral: no romper los clicks
+      if (!moved) {
+        moved = true;
+        el.classList.add('is-dragging');
+        el.setPointerCapture(e.pointerId);
+      }
+      el.scrollTop -= dy;
+      const now = performance.now();
+      const dt = Math.max(1, now - lastT);
+      velocity = (dy / dt) * 16; // px por frame (~60fps)
+      lastT = now;
+      lastY = e.clientY;
+      e.preventDefault();
+    });
+
+    const endDrag = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      if (!moved) return;
+      el.classList.remove('is-dragging');
+      // Suprimir el click fantasma que sigue al arrastre
+      const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+      el.addEventListener('click', swallow, { capture: true, once: true });
+      setTimeout(() => el.removeEventListener('click', swallow, { capture: true }), 80);
+      // Inercia con decaimiento
+      let v = velocity;
+      const step = () => {
+        if (Math.abs(v) < 0.4) { raf = null; return; }
+        el.scrollTop -= v;
+        v *= 0.94;
+        raf = requestAnimationFrame(step);
+      };
+      if (Math.abs(v) > 1.5) raf = requestAnimationFrame(step);
+    };
+
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointercancel', endDrag);
   },
 
   /* ============================ Navegación ============================ */
@@ -432,6 +522,16 @@ const App = {
     return '<svg class="star-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.4 9.3l5.8-.8z"/></svg>';
   },
 
+  /* Badge de tipo de espacio (Bar / Casa / Peña) con icono, legible sobre foto */
+  spaceBadgeHtml(v, extraClass = '') {
+    const icons = {
+      bar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M17 11h1a3 3 0 0 1 0 6h-1M5 11h12v6a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3v-6zM6 8V6M10 8V4M14 8V6"/></svg>',
+      casa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 9.5V21h5v-6h4v6h5V9.5"/></svg>',
+      pena: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4m0 0h13l-2.5 4L18 12H5"/></svg>',
+    };
+    return `<span class="venue-badge venue-badge--${v.category} ${extraClass}">${icons[v.spaceType] || icons.bar}${SPACE_TYPE_LABELS[v.spaceType]}</span>`;
+  },
+
   /* ============================ Detalle de partido ============================ */
 
   openMatchDetail(matchId) {
@@ -587,7 +687,7 @@ const App = {
       <article class="event-card venue-card${fav ? ' is-fav' : ''}" data-venue-id="${v.id}" role="button" tabindex="0">
         <div class="venue-card__media venue-card__media--${v.category}">
           <img class="venue-card__img" src="${v.image}" alt="" loading="lazy" onerror="this.remove()">
-          <span class="venue-badge venue-badge--${v.category} venue-card__badge">${SPACE_TYPE_LABELS[v.spaceType]}</span>
+          ${this.spaceBadgeHtml(v, 'venue-card__badge')}
           ${statusBadge}
         </div>
         <div class="event-card__body">
@@ -781,7 +881,7 @@ const App = {
       <div class="venue-hero venue-hero--${v.category}">
         <img class="venue-hero__img" src="${v.image}" alt="" onerror="this.remove()">
         <div class="venue-hero__grad"></div>
-        <span class="venue-badge venue-badge--${v.category} venue-hero__badge">${SPACE_TYPE_LABELS[v.spaceType]}</span>
+        ${this.spaceBadgeHtml(v, 'venue-hero__badge')}
       </div>
 
       <div class="venue-body">
@@ -865,13 +965,6 @@ const App = {
               </div>
             </div>
           `).join('')}
-        </div>
-
-        <div class="venue-detail__cta">
-          <p class="venue-detail__as">Reservando como <strong>${this.state.authUser.firstName} ${this.state.authUser.lastName}</strong></p>
-          ${full
-            ? `<button class="btn btn--block" disabled style="background: var(--interactive-primary-disabled); color: var(--content-disabled)">Sitio completo</button>`
-            : `<button class="btn btn--primary btn--block" data-reserve-open="${v.id}">Reservar plaza</button>`}
         </div>
       </div>
     `;
@@ -1017,10 +1110,39 @@ const App = {
     this.state.tickets.unshift(ticket);
     this.updateTicketsBadge();
     this.closeReserve();
+    this.playTicketChime();
     this.showTicket(ticket, { animate: true });
 
     this.renderVenueDetail(v);
     this.mountVenueMap(v);
+  },
+
+  /* ============================ Feedback de sonido ============================ */
+
+  /* Chime breve de éxito (dos notas ascendentes) al emitirse la entrada.
+     Web Audio API, sin archivos externos; el click de confirmar es el gesto
+     de usuario que permite crear el AudioContext. */
+  playTicketChime() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!this._audioCtx) this._audioCtx = new Ctx();
+      const ctx = this._audioCtx;
+      if (ctx.state === 'suspended') ctx.resume();
+      const t0 = ctx.currentTime;
+      [[659.25, 0], [880, 0.12]].forEach(([freq, delay]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, t0 + delay);
+        gain.gain.exponentialRampToValueAtTime(0.18, t0 + delay + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + delay + 0.35);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t0 + delay);
+        osc.stop(t0 + delay + 0.4);
+      });
+    } catch (e) { /* sin audio disponible: la demo sigue en silencio */ }
   },
 
   /* ============================ Ticket (entrada de estadio) ============================ */
@@ -1082,28 +1204,10 @@ const App = {
 
   /* ============================ Mis entradas ============================ */
 
-  /* Tarjeta de perfil al inicio de Mis entradas (abre el sheet de perfil) */
-  profileCardHtml() {
-    const u = this.state.authUser;
-    return `
-      <button type="button" class="profile-card" data-open-profile>
-        <span class="profile-card__avatar" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
-        </span>
-        <span class="profile-card__text">
-          <strong class="profile-card__name">${u.firstName} ${u.lastName}</strong>
-          <span class="profile-card__meta">${u.area} · ${u.city}</span>
-        </span>
-        <svg class="profile-card__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
-    `;
-  },
-
   renderTickets() {
     const content = this.els['tickets-content'];
     if (!this.state.tickets.length) {
       content.innerHTML = `
-        ${this.profileCardHtml()}
         <div class="tickets-empty">
           <div class="tickets-empty__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M15 6v12"/></svg>
@@ -1117,7 +1221,6 @@ const App = {
     }
 
     content.innerHTML = `
-      ${this.profileCardHtml()}
       <div class="tickets-list">
         ${this.state.tickets.map((t) => `
           <article class="ticket-mini ticket-mini--${t.category}" data-ticket-id="${t.id}" role="button" tabindex="0">

@@ -94,6 +94,30 @@ const EVENT_TEMPLATES = {
       reserved: 33,
       distRange: { min: 2.5, max: 4.5 },
     },
+    {
+      id: 'geo-7',
+      matchId: 'match-m-clasico',
+      name: 'Rooftop culé — pantalla gigante',
+      location: 'Terraza con pantalla',
+      address: 'A menos de 4 km de ti',
+      category: 'classic',
+      spaceType: 'bar',
+      capacity: 90,
+      reserved: 78,
+      distRange: { min: 2.0, max: 4.0 },
+    },
+    {
+      id: 'geo-8',
+      matchId: 'match-m-clasico',
+      name: 'Salón blaugrana — recién abierto',
+      location: 'Casa de un socio',
+      address: 'A menos de 3 km de ti',
+      category: 'community',
+      spaceType: 'casa',
+      capacity: 10,
+      reserved: 2,
+      distRange: { min: 1.0, max: 2.8 },
+    },
   ],
 
   /* ── Londres ── */
@@ -175,6 +199,39 @@ const EVENT_TEMPLATES = {
       capacity: 55,
       reserved: 48,
     },
+    {
+      id: 'lon-8',
+      matchId: 'match-m-clasico',
+      name: 'Big Screen Clásico — Wembley Box',
+      location: 'Sports lounge, Wembley',
+      address: '18 Empire Way, HA9 0EW',
+      category: 'classic',
+      spaceType: 'bar',
+      capacity: 120,
+      reserved: 61,
+    },
+    {
+      id: 'lon-9',
+      matchId: 'match-m-clasico',
+      name: 'Casa Laporta — Notting Hill',
+      location: 'Casa particular, Notting Hill',
+      address: '31 Portobello Rd, W11 3DB',
+      category: 'community',
+      spaceType: 'casa',
+      capacity: 8,
+      reserved: 7,
+    },
+    {
+      id: 'lon-10',
+      matchId: 'match-m-clasico',
+      name: 'Penya Blaugrana Greenwich',
+      location: 'Club house, Greenwich',
+      address: '2 Nelson Rd, SE10 9JB',
+      category: 'pena',
+      spaceType: 'pena',
+      capacity: 60,
+      reserved: 12,
+    },
   ],
 
   /* ── Ámsterdam ── */
@@ -245,6 +302,28 @@ const EVENT_TEMPLATES = {
       capacity: 75,
       reserved: 52,
     },
+    {
+      id: 'ams-7',
+      matchId: 'match-m-clasico',
+      name: 'Clásico aan de gracht',
+      location: 'Casa flotante, Prinsengracht',
+      address: 'Prinsengracht 263, 1016 GV',
+      category: 'community',
+      spaceType: 'casa',
+      capacity: 9,
+      reserved: 3,
+    },
+    {
+      id: 'ams-8',
+      matchId: 'match-m-clasico',
+      name: 'The Football Factory — Noord',
+      location: 'Nave con pantallas, Noord',
+      address: 'NDSM-Plein 28, 1033 WB',
+      category: 'classic',
+      spaceType: 'bar',
+      capacity: 110,
+      reserved: 96,
+    },
   ],
 
   /* ── París ── */
@@ -314,6 +393,28 @@ const EVENT_TEMPLATES = {
       spaceType: 'pena',
       capacity: 65,
       reserved: 40,
+    },
+    {
+      id: 'par-7',
+      matchId: 'match-m-clasico',
+      name: 'Le Clásico — Canal Saint-Martin',
+      location: 'Café-terrasse, Canal Saint-Martin',
+      address: '95 Quai de Valmy, 75010',
+      category: 'classic',
+      spaceType: 'bar',
+      capacity: 65,
+      reserved: 59,
+    },
+    {
+      id: 'par-8',
+      matchId: 'match-m-clasico',
+      name: 'Blaugranas du 13e — Chez Marta',
+      location: 'Appartement, Butte-aux-Cailles',
+      address: '7 Rue des Cinq Diamants, 75013',
+      category: 'community',
+      spaceType: 'casa',
+      capacity: 12,
+      reserved: 4,
     },
   ],
 };
@@ -422,14 +523,19 @@ const VENUE_PHOTOS = {
     'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=640&q=60&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1538488881038-e252a119ace7?w=640&q=60&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1525268323446-0505b6fe7778?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=640&q=60&auto=format&fit=crop',
   ],
   casa: [
     'https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?w=640&q=60&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=640&q=60&auto=format&fit=crop',
   ],
   pena: [
     'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=640&q=60&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1543007630-9710e4a00a20?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=640&q=60&auto=format&fit=crop',
   ],
 };
 
@@ -446,9 +552,17 @@ const REVIEW_POOL = [
   { name: 'Carla', initials: 'C', text: 'Fui con mi hermano y encajamos al momento. Volveremos.' },
   { name: 'Dani', initials: 'D', text: 'Un poco justo de sitio en partido grande: llega pronto.' },
   { name: 'Aina', initials: 'A', text: 'Ambiente familiar y muy culé. Perfecto para el clásico.' },
+  { name: 'Hugo', initials: 'H', text: 'Pantalla enorme y el gol se celebró como en la grada. Brutal.' },
+  { name: 'Mireia', initials: 'M', text: 'Fui sola y me sentí como en casa desde el minuto uno.' },
+  { name: 'Tomás', initials: 'T', text: 'Buen rollo, aunque el descanso se hizo largo por la cola del bar.' },
+  { name: 'Anna', initials: 'A', text: 'El host preparó hasta pan con tomate. Detallazo.' },
+  { name: 'Karim', initials: 'K', text: 'Llevé a un amigo madridista y salió medio culé. Ambientazo.' },
+  { name: 'Julia', initials: 'J', text: 'Un poco difícil de encontrar la entrada, pero mereció la pena.' },
+  { name: 'Pere', initials: 'P', text: 'Se canta el himno antes del partido. Piel de gallina.' },
+  { name: 'Sofía', initials: 'S', text: 'Sitio correcto sin más, aunque la compañía lo arregla todo.' },
 ];
 
-const REVIEW_DATES = ['hace 3 días', 'hace 1 semana', 'hace 2 semanas', 'hace 1 mes', 'hace 2 meses'];
+const REVIEW_DATES = ['hace 2 días', 'hace 3 días', 'hace 5 días', 'hace 1 semana', 'hace 2 semanas', 'hace 3 semanas', 'hace 1 mes', 'hace 2 meses'];
 
 function hashStr(s) {
   let h = 0;
@@ -463,7 +577,8 @@ function enrichVenue(v) {
   const image = photos[h % photos.length];
   const rating = Math.round((3.9 + (h % 12) / 10) * 10) / 10; // 3.9 – 5.0
   const reviewCount = 18 + (h % 230);
-  const reviews = [0, 1, 2].map((i) => {
+  const shownReviews = 2 + (h % 3); // 2–4 reseñas visibles según el sitio
+  const reviews = Array.from({ length: shownReviews }, (_, i) => i).map((i) => {
     const p = REVIEW_POOL[(h + i * 3) % REVIEW_POOL.length];
     const r = Math.max(3, Math.min(5, Math.round(rating) - (i === 2 ? 1 : 0)));
     return { name: p.name, initials: p.initials, text: p.text, rating: r, date: REVIEW_DATES[(h + i) % REVIEW_DATES.length] };
