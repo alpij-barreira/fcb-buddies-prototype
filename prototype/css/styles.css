@@ -3575,10 +3575,16 @@ body {
   border-color: transparent;
 }
 
-/* Sitio completo: lista de espera (contorno acentuado, sigue siendo accionable) */
+/* Lista de espera: mismo aspecto e interacción que «Guardar sitio» —
+   neutro por defecto y acentuado (dorado) al activarse */
 .venue-action--waitlist {
-  border-color: var(--interactive-primary);
+  color: var(--content-secondary);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.venue-action--waitlist.is-active {
   color: var(--interactive-primary);
+  border-color: var(--interactive-primary);
 }
 
 .venue-action:disabled {

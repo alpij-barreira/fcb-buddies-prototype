@@ -30,6 +30,8 @@ const App = {
     // Locales favoritos (ids de plantilla; persisten en localStorage)
     favorites: [],
     pendingSaveVenueId: null,
+    // Sitios completos en los que me he puesto en lista de espera (demo, en memoria)
+    waitlist: [],
     tickets: [],
     mapExpanded: false,
     ticketSeq: 0,
@@ -139,9 +141,9 @@ const App = {
       if (mapAction === 'collapse') { this.collapseMap(); return; }
       const reserveOpen = e.target.closest('[data-reserve-open]')?.dataset.reserveOpen;
       if (reserveOpen) { this.openReserve(reserveOpen); return; }
-      // Sitio completo: apuntarse a la lista de espera (demo, sin backend real)
+      // Sitio completo: lista de espera, toggle visual igual que «Guardar sitio»
       const waitlist = e.target.closest('[data-waitlist]');
-      if (waitlist) this.flashTicketButton(waitlist, 'Te avisaremos');
+      if (waitlist) this.toggleWaitlist(waitlist.dataset.waitlist);
     });
 
     // Sheet de reserva
@@ -535,6 +537,28 @@ const App = {
     btn.setAttribute('aria-pressed', String(fav));
     const label = btn.querySelector('.venue-action__label');
     if (label) label.textContent = fav ? 'Guardado' : 'Guardar sitio';
+  },
+
+  /* Lista de espera (sitios completos): toggle visual espejo de «Guardar sitio» */
+  isWaitlisted(venueId) {
+    return this.state.waitlist.includes(venueId);
+  },
+
+  toggleWaitlist(venueId) {
+    const i = this.state.waitlist.indexOf(venueId);
+    if (i >= 0) this.state.waitlist.splice(i, 1);
+    else this.state.waitlist.push(venueId);
+    this.updateWaitlistButton(venueId);
+  },
+
+  updateWaitlistButton(venueId) {
+    const btn = document.getElementById('waitlist-toggle');
+    if (!btn) return;
+    const on = this.isWaitlisted(venueId);
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-pressed', String(on));
+    const label = btn.querySelector('.venue-action__label');
+    if (label) label.textContent = on ? 'Te avisaremos' : 'Lista de espera';
   },
 
   /* ¿Este partido se puede ver en alguno de mis sitios guardados? (según ubicación) */
@@ -948,9 +972,9 @@ const App = {
             <span class="venue-action__label">${fav ? 'Guardado' : 'Guardar sitio'}</span>
           </button>
           ${full
-            ? `<button type="button" class="venue-action venue-action--waitlist" data-waitlist>
+            ? `<button type="button" class="venue-action venue-action--waitlist${this.isWaitlisted(v.id) ? ' is-active' : ''}" id="waitlist-toggle" data-waitlist="${v.id}" aria-pressed="${this.isWaitlisted(v.id)}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-                Lista de espera
+                <span class="venue-action__label">${this.isWaitlisted(v.id) ? 'Te avisaremos' : 'Lista de espera'}</span>
               </button>`
             : `<button type="button" class="venue-action venue-action--primary" data-reserve-open="${v.id}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/></svg>
