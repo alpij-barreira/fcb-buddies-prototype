@@ -50,8 +50,7 @@ body {
   display: contents;
 }
 
-.phone-statusbar,
-.phone-island {
+.phone-statusbar {
   display: none;
 }
 
@@ -65,12 +64,14 @@ body {
     display: block;
     position: relative;
     flex-shrink: 0;
-    width: min(calc(var(--app-max-width) + 24px), 100%);
-    height: min(880px, calc(100dvh - var(--space-5) * 2));
-    padding: 12px;
+    /* Proporción tipo iPhone 17 (402×874 pt ≈ 0.46); el alto manda y el ancho
+       se deriva del aspecto, así deja de verse "ancho de más" en PC */
+    height: min(860px, calc(100dvh - var(--space-5) * 2));
+    aspect-ratio: 402 / 874;
+    padding: 10px;
     background: var(--neutral-950);
     border: 1px solid var(--neutral-700);
-    border-radius: 56px;
+    border-radius: 52px;
     box-shadow: var(--shadow-3), 0 24px 80px rgba(5, 7, 14, 0.55);
   }
 
@@ -92,7 +93,7 @@ body {
     width: 100%;
     height: 100%;
     min-height: 0;
-    border-radius: 44px;
+    border-radius: 42px;
     padding-top: 44px; /* hueco para la barra de estado simulada */
   }
 
@@ -125,19 +126,6 @@ body {
   .phone-statusbar__icons svg {
     height: 11px;
     width: auto;
-  }
-
-  .phone-island {
-    display: block;
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 118px;
-    height: 30px;
-    border-radius: var(--radius-full);
-    background: var(--neutral-950);
-    z-index: 3001;
   }
 
 }
