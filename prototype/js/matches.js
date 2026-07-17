@@ -149,7 +149,10 @@ const Home = {
             ${crestHtml(match.home, match.homeAbbr, 'barca', 'width:40px;height:40px;font-size:12px')}
             <span class="mfc-team__name">${match.home}</span>
           </div>
-          <span class="match-feed-card__time">${timeLabel}</span>
+          <div class="match-feed-card__center">
+            <span class="match-feed-card__time">${timeLabel}</span>
+            ${statusHtml}
+          </div>
           <div class="mfc-team">
             ${crestHtml(match.away, match.awayAbbr, 'rival', 'width:40px;height:40px;font-size:12px')}
             <span class="mfc-team__name">${match.away}</span>
@@ -159,7 +162,6 @@ const Home = {
           ${this.socialProof(match)}
           <span class="match-feed-card__go">Dónde verlo ›</span>
         </div>
-        ${statusHtml}
       </article>
     `;
   },

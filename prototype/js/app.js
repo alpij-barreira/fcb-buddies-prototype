@@ -29,6 +29,7 @@ const App = {
     venueOptsDraft: null,
     // Locales favoritos (ids de plantilla; persisten en localStorage)
     favorites: [],
+    pendingSaveVenueId: null,
     tickets: [],
     mapExpanded: false,
     ticketSeq: 0,
@@ -98,7 +99,9 @@ const App = {
     // Perfil (la tarjeta que lo abre vive en Mis entradas, con delegación)
     this.els['profile-overlay'].addEventListener('click', () => this.closeProfile());
     this.els['profile-content'].addEventListener('click', (e) => {
-      if (e.target.closest('[data-profile-action="close"]')) this.closeProfile();
+      const action = e.target.closest('[data-profile-action]')?.dataset.profileAction;
+      if (action === 'close') this.closeProfile();
+      else if (action === 'login') this.loginFromProfile();
     });
 
     // Ubicación
@@ -126,7 +129,11 @@ const App = {
     // Detalle de sitio → mapa / reservar / favorito
     this.els['venue-detail-content'].addEventListener('click', (e) => {
       const fav = e.target.closest('[data-fav-toggle]');
-      if (fav) { this.toggleFavorite(fav.dataset.favToggle); return; }
+      if (fav) {
+        if (!this.state.isLoggedIn) { this.promptLoginToSave(fav.dataset.favToggle); return; }
+        this.toggleFavorite(fav.dataset.favToggle);
+        return;
+      }
       const mapAction = e.target.closest('[data-map-action]')?.dataset.mapAction;
       if (mapAction === 'expand') { this.expandMap(); return; }
       if (mapAction === 'collapse') { this.collapseMap(); return; }
@@ -146,6 +153,7 @@ const App = {
       else if (action === 'done') { this.closeTicket(); }
       else if (action === 'share') { this.shareTicket(this.state.activeTicket, btn); }
       else if (action === 'calendar') { this.addTicketToCalendar(this.state.activeTicket, btn); }
+      else if (action === 'cancel') { this.handleCancelClick(btn); }
     });
 
     // Mis entradas → perfil / reabrir ticket
@@ -499,7 +507,8 @@ const App = {
   },
 
   isFavorite(venueId) {
-    return this.state.favorites.includes(venueId);
+    // Sin sesión no hay sitios guardados: los favoritos reaparecen al entrar
+    return this.state.isLoggedIn && this.state.favorites.includes(venueId);
   },
 
   toggleFavorite(venueId) {
@@ -579,9 +588,9 @@ const App = {
 
     let statusBlock = '';
     if (match.status === 'postponed') {
-      statusBlock = `<p class="alert alert--warning">${match.statusNote || 'Partido aplazado — nueva fecha por confirmar'}</p>`;
+      statusBlock = `<p class="alert alert--warning match-detail__status">${match.statusNote || 'Partido aplazado — nueva fecha por confirmar'}</p>`;
     } else if (match.status === 'cancelled') {
-      statusBlock = `<p class="alert alert--danger">${match.statusNote || 'Partido cancelado'}</p>`;
+      statusBlock = `<p class="alert alert--danger match-detail__status">${match.statusNote || 'Partido cancelado'}</p>`;
     }
 
     const all = isClosed ? [] : this.getVenuesForMatch(match.id);
@@ -624,6 +633,16 @@ const App = {
       venuesBlock = `
         <div class="venues-empty">
           <p class="body-s">Todavía no hay sitios de la comunidad para este partido en ${label}. Prueba a cambiar de ubicación o vuelve pronto.</p>
+        </div>
+        <div class="ambassador-banner">
+          <div class="ambassador-banner__text">
+            <strong>Sé el primero</strong>
+            <span>Organiza un evento para este partido y conviértete en embajador de la comunidad.</span>
+          </div>
+          <button type="button" class="btn btn--primary ambassador-banner__btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Crear evento
+          </button>
         </div>`;
     } else if (!shown.length) {
       venuesBlock = `
@@ -1106,8 +1125,14 @@ const App = {
         </div>
       </div>
 
+      ${v.spaceType === 'casa' ? `
+        <p class="reserve-host-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          Es un evento en casa: el anfitrión revisará tu solicitud antes de confirmar.
+        </p>` : ''}
+
       <button type="button" class="btn btn--primary btn--block reserve-confirm" data-reserve-action="confirm">
-        Confirmar ${plazas} plaza${plazas !== 1 ? 's' : ''}
+        ${v.spaceType === 'casa' ? 'Solicitar plaza' : `Confirmar ${plazas} plaza${plazas !== 1 ? 's' : ''}`}
       </button>
       <p class="reserve-note">${this.state.isLoggedIn
         ? `A nombre de ${this.state.authUser.firstName} ${this.state.authUser.lastName}`
@@ -1138,6 +1163,12 @@ const App = {
     `;
   },
 
+  /* Marca la sesión como iniciada (login simulado de la demo) */
+  doLogin() {
+    this.state.isLoggedIn = true;
+    this.updateHeaderProfile();
+  },
+
   /* Login/registro de la demo: confirma la identidad y completa la reserva */
   handleAuth() {
     this.els['reserve-content'].innerHTML = `
@@ -1147,8 +1178,7 @@ const App = {
       </div>
     `;
     window.setTimeout(() => {
-      this.state.isLoggedIn = true;
-      this.updateHeaderProfile();
+      this.doLogin();
       this.confirmReserve();
     }, 700);
   },
@@ -1189,6 +1219,8 @@ const App = {
 
     v.reserved = Math.min(v.capacity, v.reserved + plazas);
 
+    // Los eventos en casa requieren que el anfitrión acepte la solicitud
+    const pending = v.spaceType === 'casa';
     const d = parseDate(match.date);
     const ticket = {
       id: `t-${Date.now()}-${this.state.ticketSeq++}`,
@@ -1204,6 +1236,8 @@ const App = {
       venueName: v.name,
       venueLocation: v.location,
       category: v.category,
+      spaceType: v.spaceType,
+      status: pending ? 'pending' : 'confirmed',
       plazas,
       holder: `${this.state.authUser.firstName} ${this.state.authUser.lastName}`,
     };
@@ -1261,6 +1295,11 @@ const App = {
             ${crestHtml(t.away, t.awayAbbr, 'rival', 'width:38px;height:38px;font-size:12px')}
           </div>
           <div class="ticket__match">${t.home} · ${t.away}</div>
+          ${t.status === 'pending' ? `
+            <span class="ticket-status ticket-status--pending">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+              Pendiente de confirmación
+            </span>` : ''}
           <div class="ticket__grid">
             <div><span>Fecha</span><strong>${t.dateLabel}</strong></div>
             <div><span>Hora</span><strong>${t.timeLabel}</strong></div>
@@ -1280,13 +1319,25 @@ const App = {
 
   showTicket(t, { animate = true } = {}) {
     this.state.activeTicket = t;
+    const pending = t.status === 'pending';
+    let title;
+    let sub;
+    if (pending) {
+      title = animate ? 'Solicitud enviada' : 'Tu solicitud';
+      sub = 'El anfitrión debe aceptar tu solicitud. Te avisaremos en cuanto responda.';
+    } else {
+      title = animate ? '¡Plaza reservada!' : 'Tu entrada';
+      sub = 'Guárdala — es tu entrada para ver el partido en compañía.';
+    }
     this.els['ticket-stage'].innerHTML = `
       <div class="ticket-result${animate ? ' is-animating' : ''}">
-        <div class="ticket-result__seal" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+        <div class="ticket-result__seal${pending ? ' ticket-result__seal--pending' : ''}" aria-hidden="true">
+          ${pending
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>'}
         </div>
-        <h2 class="ticket-result__title">${animate ? '¡Plaza reservada!' : 'Tu entrada'}</h2>
-        <p class="ticket-result__sub">Guárdala — es tu entrada para ver el partido en compañía.</p>
+        <h2 class="ticket-result__title">${title}</h2>
+        <p class="ticket-result__sub">${sub}</p>
         ${this.ticketHtml(t)}
         <div class="ticket-actions">
           <div class="ticket-actions__row">
@@ -1300,6 +1351,7 @@ const App = {
             </button>
           </div>
           ${animate ? '<button type="button" class="btn btn--primary btn--block" data-ticket-action="tickets">Ver en Mis entradas</button>' : ''}
+          ${!animate ? '<button type="button" class="btn btn--danger-ghost btn--block" data-ticket-action="cancel">Cancelar reserva</button>' : ''}
           <button type="button" class="btn btn--ghost btn--block" data-ticket-action="done">Hecho</button>
         </div>
       </div>
@@ -1311,6 +1363,30 @@ const App = {
   closeTicket() {
     this.els['ticket-overlay'].classList.remove('is-open');
     this.els['ticket-overlay'].setAttribute('aria-hidden', 'true');
+  },
+
+  /* Cancelar reserva en dos pasos (anti-error): 1er tap arma, 2º cancela */
+  handleCancelClick(btn) {
+    if (!btn) return;
+    if (btn.dataset.armed === '1') {
+      this.cancelTicket(this.state.activeTicket);
+      return;
+    }
+    btn.dataset.armed = '1';
+    btn.classList.remove('btn--danger-ghost');
+    btn.classList.add('btn--danger');
+    btn.textContent = 'Confirmar cancelación';
+  },
+
+  cancelTicket(t) {
+    if (!t) return;
+    const i = this.state.tickets.findIndex((x) => x.id === t.id);
+    if (i >= 0) this.state.tickets.splice(i, 1);
+    // Restaurar aforo si el sitio está en el escenario actual (best-effort)
+    const venue = this.getVenuesForMatch(t.matchId).find((v) => v.name === t.venueName);
+    if (venue) venue.reserved = Math.max(0, venue.reserved - t.plazas);
+    this.closeTicket();
+    this.renderTickets();
   },
 
   /* Feedback breve en el propio botón de acción del ticket */
@@ -1403,6 +1479,11 @@ const App = {
               <span class="ticket-mini__comp">${t.comp}</span>
               <span class="ticket-mini__match">${t.home} vs ${t.away}</span>
               <span class="ticket-mini__meta">${t.dateLabel} · ${t.timeLabel} · ${t.venueName}</span>
+              ${t.status === 'pending' ? `
+                <span class="ticket-status ticket-status--pending">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+                  Pendiente de confirmación
+                </span>` : ''}
             </div>
             <div class="ticket-mini__stub">
               <span class="ticket-mini__plazas">${t.plazas}</span>
@@ -1423,6 +1504,7 @@ const App = {
         <button type="button" class="access-sheet__close" data-profile-action="close" aria-label="Cerrar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>`;
+    const saving = !!this.state.pendingSaveVenueId;
     this.els['profile-content'].innerHTML = this.state.isLoggedIn ? `
       <div class="access-sheet__header">
         <div>
@@ -1435,25 +1517,46 @@ const App = {
       <div class="profile-stats">
         <div><strong>${this.state.tickets.length}</strong><span>entradas</span></div>
       </div>
-      <button type="button" class="btn btn--ghost btn--block" data-profile-action="close">Cerrar</button>
+      <button type="button" class="btn btn--secondary btn--block" data-profile-action="close">Cerrar</button>
     ` : `
       <div class="access-sheet__header">
         <div>
           <p class="access-sheet__overline">Tu cuenta</p>
-          <h2 class="access-sheet__title" id="profile-title">Aún no has iniciado sesión</h2>
+          <h2 class="access-sheet__title" id="profile-title">${saving ? 'Inicia sesión para guardar sitios' : 'Aún no has iniciado sesión'}</h2>
         </div>
         ${closeBtn}
       </div>
-      <p class="access-sheet__context">Explora los partidos y sitios sin cuenta. Cuando reserves tu primera plaza te pediremos iniciar sesión o crear una.</p>
-      <button type="button" class="btn btn--secondary btn--block" data-profile-action="close">Entendido</button>
+      <p class="access-sheet__context">${saving
+        ? 'Guarda tus sitios favoritos para encontrarlos rápido y priorizarlos en cada partido. Necesitas una cuenta para hacerlo.'
+        : 'Explora los partidos y sitios sin cuenta. Cuando reserves tu primera plaza te pediremos iniciar sesión o crear una.'}</p>
+      <div class="btn-group">
+        <button type="button" class="btn btn--primary btn--block" data-profile-action="login">Iniciar sesión</button>
+        <button type="button" class="btn btn--ghost btn--block" data-profile-action="close">Ahora no</button>
+      </div>
     `;
     this.els['profile-overlay'].classList.add('is-open');
     this.els['profile-sheet'].classList.add('is-open');
   },
 
+  /* Guardar requiere sesión: pide entrar y recuerda el sitio pendiente */
+  promptLoginToSave(venueId) {
+    this.state.pendingSaveVenueId = venueId;
+    this.openProfile();
+  },
+
   closeProfile() {
     this.els['profile-overlay'].classList.remove('is-open');
     this.els['profile-sheet'].classList.remove('is-open');
+    this.state.pendingSaveVenueId = null;
+  },
+
+  /* Iniciar sesión desde el perfil; si había un sitio pendiente, lo guarda */
+  loginFromProfile() {
+    const pending = this.state.pendingSaveVenueId;
+    this.doLogin();
+    this.closeProfile();
+    // toggleFavorite refresca la vista actual (detalle de sitio o de partido)
+    if (pending) this.toggleFavorite(pending);
   },
 };
 
