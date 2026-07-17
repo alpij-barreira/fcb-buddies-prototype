@@ -545,6 +545,18 @@ body {
   overflow: hidden;
 }
 
+/* Rival aún por definir: escudo genérico apagado */
+.match-card__crest--tbd {
+  background: var(--background-raised);
+  border: 1px dashed var(--border-strong);
+  color: var(--content-tertiary);
+}
+
+.match-card__crest--tbd svg {
+  width: 62%;
+  height: 62%;
+}
+
 .match-card__crest-img {
   position: absolute;
   inset: 0;
@@ -1513,8 +1525,8 @@ body {
 }
 
 .matches-date-separator {
-  font: var(--text-heading-s);
-  color: var(--content-secondary);
+  font: var(--text-label-m);
+  color: var(--content-tertiary);
   text-transform: capitalize;
   margin: var(--space-4) 0 var(--space-2);
 }
@@ -1819,12 +1831,17 @@ body {
 }
 
 .home-section-title {
-  font: var(--text-heading-s);
+  font: var(--text-heading-m);
   margin: var(--space-5) 0 var(--space-3);
 }
 
 .home-section-title:first-child {
   margin-top: var(--space-1);
+}
+
+/* «Partido destacado» — título de sección en amarillo, fuera del hero */
+.home-section-title--featured {
+  color: var(--gold-400);
 }
 
 /* ── Hero destacado del home ── */
@@ -1870,15 +1887,6 @@ body {
 
 .home-hero:active {
   transform: scale(0.985);
-}
-
-.home-hero__flag {
-  display: inline-block;
-  font: var(--text-label-s);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--gold-400);
-  margin-bottom: var(--space-2);
 }
 
 .home-hero__teams {
@@ -1995,6 +2003,8 @@ body {
   gap: var(--space-3);
 }
 
+/* Estructura tipo marcador deportivo: nombres hacia los extremos y
+   escudos hacia el centro flanqueando la hora */
 .mfc-team {
   flex: 1;
   display: flex;
@@ -2003,16 +2013,21 @@ body {
   min-width: 0;
 }
 
-.mfc-team:last-of-type {
-  flex-direction: row-reverse;
+.mfc-team:first-of-type {
+  flex-direction: row-reverse; /* nombre a la izquierda del escudo */
   text-align: right;
+}
+
+.mfc-team:last-of-type {
+  text-align: left; /* escudo primero, nombre extendiéndose a la derecha */
 }
 
 .mfc-team__name {
   font: var(--text-label-l);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* nombres largos a dos líneas, sin puntos suspensivos */
+  -webkit-box-orient: vertical;
 }
 
 /* Hora del partido en el centro de la fila de equipos */
@@ -2640,6 +2655,17 @@ body {
   gap: var(--space-3);
 }
 
+/* Fila de acciones de la entrada: compartir y añadir al calendario */
+.ticket-actions__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.ticket-actions__row .btn {
+  padding: 0 var(--space-3);
+}
+
 .ticket-actions .btn--ghost {
   color: var(--neutral-0);
   border-color: rgba(255, 255, 255, 0.4);
@@ -2904,22 +2930,6 @@ body {
 .mini-nav__btn.is-active {
   background: var(--interactive-primary);
   color: var(--interactive-on-primary);
-}
-
-.mini-nav__badge {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  background: var(--background-grana);
-  color: var(--content-on-brand);
-  font: var(--text-label-s);
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* ============================================================

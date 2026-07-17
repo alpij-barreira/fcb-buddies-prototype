@@ -84,9 +84,25 @@ const FIXTURES = [
     time: '16:15',
     round: 'Jornada 35',
     status: 'scheduled',
-    hasEvents: false,
-    eventCount: 0,
+    hasEvents: true,
+    eventCount: 3,
     venue: 'Reale Arena',
+  },
+  {
+    id: 'match-m-0712-sevilla',
+    team: 'men',
+    competitionId: 'laliga',
+    home: 'Sevilla FC',
+    homeAbbr: 'SEV',
+    away: 'FC Barcelona',
+    awayAbbr: 'BAR',
+    date: '2026-07-12',
+    time: null,
+    round: 'Jornada 37',
+    status: 'tbc',
+    hasEvents: true,
+    eventCount: 2,
+    venue: 'Ramón Sánchez-Pizjuán',
   },
   {
     id: 'match-m-0705-valencia',
@@ -100,8 +116,8 @@ const FIXTURES = [
     time: null,
     round: 'Jornada 36',
     status: 'tbc',
-    hasEvents: false,
-    eventCount: 0,
+    hasEvents: true,
+    eventCount: 2,
     venue: 'Estadi Olímpic Lluís Companys',
   },
   // —— Masculino · Champions ——
@@ -171,6 +187,22 @@ const FIXTURES = [
     venue: 'Estadi Olímpic Lluís Companys',
     statusNote: 'Aplazado — nueva fecha por confirmar',
   },
+  {
+    id: 'match-m-0718-copa-final',
+    team: 'men',
+    competitionId: 'copa',
+    home: 'FC Barcelona',
+    homeAbbr: 'BAR',
+    away: 'Por definir',
+    awayAbbr: '?',
+    date: '2026-07-18',
+    time: '21:30',
+    round: 'Final',
+    status: 'scheduled',
+    hasEvents: true,
+    eventCount: 2,
+    venue: 'Estadio de La Cartuja',
+  },
   // —— Femenino · Liga F ——
   {
     id: 'match-w-0615-levante',
@@ -216,8 +248,8 @@ const FIXTURES = [
     time: '20:00',
     round: 'Jornada 30',
     status: 'scheduled',
-    hasEvents: false,
-    eventCount: 0,
+    hasEvents: true,
+    eventCount: 3,
     venue: 'Johan Cruyff',
   },
   {
@@ -232,9 +264,25 @@ const FIXTURES = [
     time: null,
     round: 'Jornada 31',
     status: 'tbc',
+    hasEvents: true,
+    eventCount: 2,
+    venue: 'La Laguna',
+  },
+  {
+    id: 'match-w-0716-madridcff',
+    team: 'women',
+    competitionId: 'ligaf',
+    home: 'Madrid CFF',
+    homeAbbr: 'MCF',
+    away: 'FC Barcelona Femení',
+    awayAbbr: 'BAR',
+    date: '2026-07-16',
+    time: '19:00',
+    round: 'Jornada 32',
+    status: 'scheduled',
     hasEvents: false,
     eventCount: 0,
-    venue: 'La Laguna',
+    venue: 'Matapiñonera',
   },
   // —— Femenino · UWCL ——
   {
@@ -303,6 +351,22 @@ const FIXTURES = [
     venue: 'Johan Cruyff',
     statusNote: 'Cancelado por acuerdo federativo',
   },
+  {
+    id: 'match-w-0719-copa-final',
+    team: 'women',
+    competitionId: 'copa_reina',
+    home: 'FC Barcelona Femení',
+    homeAbbr: 'BAR',
+    away: 'Por definir',
+    awayAbbr: '?',
+    date: '2026-07-19',
+    time: null,
+    round: 'Final',
+    status: 'tbc',
+    hasEvents: true,
+    eventCount: 2,
+    venue: 'La Rosaleda',
+  },
 ];
 
 function parseDate(str) {
@@ -311,10 +375,12 @@ function parseDate(str) {
 }
 
 function formatMatchDatetime(match) {
-  if (match.status === 'tbc' || !match.time) return 'Por confirmar';
+  if (!match.date) return 'Por confirmar';
   const d = parseDate(match.date);
   const day = WEEKDAYS_SHORT[d.getDay()];
   const datePart = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  // Fecha conocida pero hora pendiente (status tbc)
+  if (match.status === 'tbc' || !match.time) return `${day} ${datePart} · Hora por confirmar`;
   return `${day} ${datePart} · ${match.time}`;
 }
 
@@ -420,8 +486,14 @@ const TEAM_LOGOS = {
  * @param {string} [extraStyle] - inline style opcional (p.ej. tamaño en el modal)
  */
 function crestHtml(teamName, abbr, modifier, extraStyle) {
-  const logo = TEAM_LOGOS[teamName];
   const style = extraStyle ? ` style="${extraStyle}"` : '';
+  // Rival aún sin decidir: escudo genérico apagado en lugar de logo
+  if (teamName === 'Por definir') {
+    return `<span class="match-card__crest match-card__crest--tbd"${style}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l7 2.5V11c0 4.8-3 8.4-7 10-4-1.6-7-5.2-7-10V5.5L12 3z"/><path d="M12 8v4M12 15h.01"/></svg>
+    </span>`;
+  }
+  const logo = TEAM_LOGOS[teamName];
   return `<span class="match-card__crest match-card__crest--${modifier}"${style}>${
     logo
       ? `<img src="${logo}" alt="" class="match-card__crest-img" loading="lazy" onload="this.parentElement.classList.add('has-logo')" onerror="this.style.display='none'">`

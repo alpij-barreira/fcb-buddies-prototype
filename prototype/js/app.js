@@ -44,7 +44,6 @@ const App = {
     this.initDragScroll();
     this.showScreen('home');
     this.updateMiniNav();
-    this.updateTicketsBadge();
     this.updateLocationChip();
     // Primer arranque: pedir ubicación sobre el home ya montado
     this.openLocationModal({ firstRun: true });
@@ -73,7 +72,7 @@ const App = {
     const ids = [
       'screen-home', 'screen-match-detail', 'screen-venue-detail', 'screen-tickets',
       'home-content', 'match-detail-content', 'venue-detail-content', 'tickets-content',
-      'mini-nav', 'tickets-badge',
+      'mini-nav',
       'home-location', 'home-location-label',
       'reserve-overlay', 'reserve-sheet', 'reserve-content',
       'ticket-overlay', 'ticket-stage',
@@ -141,9 +140,12 @@ const App = {
 
     // Overlay del ticket
     this.els['ticket-stage'].addEventListener('click', (e) => {
-      const action = e.target.closest('[data-ticket-action]')?.dataset.ticketAction;
+      const btn = e.target.closest('[data-ticket-action]');
+      const action = btn?.dataset.ticketAction;
       if (action === 'tickets') { this.closeTicket(); this.showMainTab('tickets'); }
       else if (action === 'done') { this.closeTicket(); }
+      else if (action === 'share') { this.shareTicket(this.state.activeTicket, btn); }
+      else if (action === 'calendar') { this.addTicketToCalendar(this.state.activeTicket, btn); }
     });
 
     // Mis entradas → perfil / reabrir ticket
@@ -1171,7 +1173,6 @@ const App = {
     };
 
     this.state.tickets.unshift(ticket);
-    this.updateTicketsBadge();
     this.closeReserve();
     this.playTicketChime();
     this.showTicket(ticket, { animate: true });
@@ -1242,6 +1243,7 @@ const App = {
   },
 
   showTicket(t, { animate = true } = {}) {
+    this.state.activeTicket = t;
     this.els['ticket-stage'].innerHTML = `
       <div class="ticket-result${animate ? ' is-animating' : ''}">
         <div class="ticket-result__seal" aria-hidden="true">
@@ -1251,7 +1253,17 @@ const App = {
         <p class="ticket-result__sub">Guárdala — es tu entrada para ver el partido en compañía.</p>
         ${this.ticketHtml(t)}
         <div class="ticket-actions">
-          <button type="button" class="btn btn--primary btn--block" data-ticket-action="tickets">Ver en Mis entradas</button>
+          <div class="ticket-actions__row">
+            <button type="button" class="btn btn--secondary" data-ticket-action="share">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+              Compartir
+            </button>
+            <button type="button" class="btn btn--secondary" data-ticket-action="calendar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M12 14v6M9 17h6"/></svg>
+              Al calendario
+            </button>
+          </div>
+          ${animate ? '<button type="button" class="btn btn--primary btn--block" data-ticket-action="tickets">Ver en Mis entradas</button>' : ''}
           <button type="button" class="btn btn--ghost btn--block" data-ticket-action="done">Hecho</button>
         </div>
       </div>
@@ -1263,6 +1275,70 @@ const App = {
   closeTicket() {
     this.els['ticket-overlay'].classList.remove('is-open');
     this.els['ticket-overlay'].setAttribute('aria-hidden', 'true');
+  },
+
+  /* Feedback breve en el propio botón de acción del ticket */
+  flashTicketButton(btn, label) {
+    if (!btn || btn._flashing) return;
+    btn._flashing = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="17" height="17" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>${label}`;
+    window.setTimeout(() => { btn.innerHTML = original; btn._flashing = false; }, 1600);
+  },
+
+  /* Compartir la entrada: share nativo del móvil con fallback a portapapeles */
+  shareTicket(t, btn) {
+    if (!t) return;
+    const text = `${t.home} vs ${t.away} — ${t.dateLabel} · ${t.timeLabel} en ${t.venueName} (${t.venueLocation}). ¡Reserva tu plaza y ven a verlo conmigo! ⚽ Barça Buddies`;
+    if (navigator.share) {
+      navigator.share({ title: 'Barça Buddies', text }).catch(() => { /* compartir cancelado */ });
+      return;
+    }
+    try {
+      navigator.clipboard.writeText(text);
+      this.flashTicketButton(btn, '¡Copiado!');
+    } catch (e) { /* portapapeles no disponible */ }
+  },
+
+  /* Añadir el evento al calendario del dispositivo (descarga un .ics) */
+  addTicketToCalendar(t, btn) {
+    if (!t) return;
+    const match = getMatchById(t.matchId);
+    const date = (match ? match.date : '').replace(/-/g, '');
+    if (!date) return;
+    let dates;
+    if (match.time) {
+      const start = match.time.replace(':', '') + '00';
+      const endH = String((Number(match.time.slice(0, 2)) + 2) % 24).padStart(2, '0');
+      const end = endH + match.time.slice(3, 5) + '00';
+      dates = `DTSTART:${date}T${start}\nDTEND:${date}T${end}`;
+    } else {
+      dates = `DTSTART;VALUE=DATE:${date}`;
+    }
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Barça Buddies//Prototype//ES',
+      'BEGIN:VEVENT',
+      `UID:${t.id}@barca-buddies`,
+      dates,
+      `SUMMARY:${t.home} vs ${t.away} — con Barça Buddies`,
+      `DESCRIPTION:Entrada ${t.code} · ${t.plazas} plaza${t.plazas !== 1 ? 's' : ''} en ${t.venueName}`,
+      `LOCATION:${t.venueName}, ${t.venueLocation}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\n');
+    try {
+      const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `barca-buddies-${t.code}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+      this.flashTicketButton(btn, 'Añadido');
+    } catch (e) { /* descarga no disponible */ }
   },
 
   /* ============================ Mis entradas ============================ */
@@ -1301,13 +1377,6 @@ const App = {
         `).join('')}
       </div>
     `;
-  },
-
-  updateTicketsBadge() {
-    const badge = this.els['tickets-badge'];
-    const n = this.state.tickets.length;
-    badge.textContent = n;
-    badge.hidden = n === 0;
   },
 
   /* ============================ Perfil (demo) ============================ */

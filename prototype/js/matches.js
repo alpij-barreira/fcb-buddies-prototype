@@ -98,7 +98,6 @@ const Home = {
     const datetime = formatMatchDatetime(match);
     return `
       <button type="button" class="home-hero" data-match-id="${match.id}">
-        <span class="home-hero__flag">Partido destacado</span>
         ${this.favFlag(match, 'home-hero__fav')}
         <div class="home-hero__teams">
           ${crestHtml(match.home, match.homeAbbr, 'barca', 'width:56px;height:56px;font-size:14px')}
@@ -184,7 +183,9 @@ const Home = {
     const featured = this.pickFeatured(fixtures);
     const rest = featured ? fixtures.filter((f) => f.id !== featured.id) : fixtures;
 
-    let html = featured ? this.renderHero(featured) : '';
+    let html = featured
+      ? `<h2 class="home-section-title home-section-title--featured">Partido destacado</h2>${this.renderHero(featured)}`
+      : '';
     html += '<h2 class="home-section-title">Próximos partidos</h2>';
 
     let lastDate = '';
