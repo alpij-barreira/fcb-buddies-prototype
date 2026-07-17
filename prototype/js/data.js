@@ -518,24 +518,27 @@ function filterEvents(events, { radiusKm, filters, hasGeo }) {
  * ordenada por cercanía. Si el partido no tiene eventos, devuelve [].
  */
 /* ── Fotos, valoración y reseñas de local (stock remoto con fallback) ── */
+/* Fotos verificadas a mano: bar → interiores de bares/pubs; casa → salones
+   (preferiblemente con tele); peña → reuniones de aficionados y amigos.
+   Nunca estadios de fútbol. */
 const VENUE_PHOTOS = {
   bar: [
     'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=640&q=60&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1538488881038-e252a119ace7?w=640&q=60&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=640&q=60&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1525268323446-0505b6fe7778?w=640&q=60&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1592861956120-e524fc739696?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=640&q=60&auto=format&fit=crop',
   ],
   casa: [
-    'https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?w=640&q=60&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=640&q=60&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1461151304267-38535e780c79?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=640&q=60&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?w=640&q=60&auto=format&fit=crop',
   ],
   pena: [
-    'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=640&q=60&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1543007630-9710e4a00a20?w=640&q=60&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1575037614876-c38a4d44f5b8?w=640&q=60&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=640&q=60&auto=format&fit=crop',
   ],
 };
 

@@ -4,7 +4,8 @@ const App = {
   state: {
     screen: 'home',
     mainTab: 'home',
-    // Sesión simulada: se asume login hecho al abrir la app
+    // Sesión: se pide cuenta al confirmar la primera reserva; luego persiste
+    isLoggedIn: false,
     authUser: {
       firstName: 'Javier',
       lastName: 'Culé',
@@ -50,12 +51,22 @@ const App = {
   },
 
   initHeaderProfile() {
+    this.updateHeaderProfile();
+    document.getElementById('header-profile')?.addEventListener('click', () => this.openProfile());
+  },
+
+  updateHeaderProfile() {
     const u = this.state.authUser;
     const initial = document.getElementById('header-profile-initial');
     const name = document.getElementById('header-profile-name');
-    if (initial) initial.textContent = u.firstName.charAt(0);
-    if (name) name.textContent = u.firstName;
-    document.getElementById('header-profile')?.addEventListener('click', () => this.openProfile());
+    if (!initial || !name) return;
+    if (this.state.isLoggedIn) {
+      initial.textContent = u.firstName.charAt(0);
+      name.textContent = u.firstName;
+    } else {
+      initial.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>';
+      name.textContent = 'Entrar';
+    }
   },
 
   cacheElements() {
@@ -508,7 +519,8 @@ const App = {
     const fav = this.isFavorite(venueId);
     btn.classList.toggle('is-fav', fav);
     btn.setAttribute('aria-pressed', String(fav));
-    btn.setAttribute('aria-label', fav ? 'Quitar de guardados' : 'Guardar este sitio');
+    const label = btn.querySelector('.venue-action__label');
+    if (label) label.textContent = fav ? 'Guardado' : 'Guardar sitio';
   },
 
   /* ¿Este partido se puede ver en alguno de mis sitios guardados? (según ubicación) */
@@ -887,7 +899,6 @@ const App = {
       <div class="venue-body">
         <div class="venue-detail__titlebar">
           <h1 class="venue-detail__name">${v.name}</h1>
-          <button type="button" class="venue-name-fav${fav ? ' is-fav' : ''}" id="fav-toggle-detail" data-fav-toggle="${v.id}" aria-pressed="${fav}" aria-label="${fav ? 'Quitar de guardados' : 'Guardar este sitio'}">${this.starIcon()}</button>
         </div>
         <div class="venue-rating-row">
           ${this.starsHtml(v.rating)}
@@ -900,9 +911,9 @@ const App = {
         ${urgency === 'full' ? `<p class="alert alert--danger venue-urgency">Este sitio está completo. Echa un vistazo a otros sitios cercanos.</p>` : ''}
 
         <div class="venue-actions">
-          <button type="button" class="venue-action" data-map-action="expand">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 20l-5.5 2.5V6L9 3.5m0 16.5 6-3m-6 3V3.5m6 13.5 5.5 2.5V6L15 3.5m0 13V3.5m0 0L9 6"/></svg>
-            Cómo llegar
+          <button type="button" class="venue-action venue-action--fav${fav ? ' is-fav' : ''}" id="fav-toggle-detail" data-fav-toggle="${v.id}" aria-pressed="${fav}">
+            ${this.starIcon()}
+            <span class="venue-action__label">${fav ? 'Guardado' : 'Guardar sitio'}</span>
           </button>
           ${full
             ? `<button type="button" class="venue-action" disabled>Completo</button>`
@@ -943,6 +954,11 @@ const App = {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
+
+        <button type="button" class="btn btn--secondary btn--block venue-map-cta" data-map-action="expand">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true"><path d="M9 20l-5.5 2.5V6L9 3.5m0 16.5 6-3m-6 3V3.5m6 13.5 5.5 2.5V6L15 3.5m0 13V3.5m0 0L9 6"/></svg>
+          Cómo llegar
+        </button>
 
         <div class="venue-reviews">
           <div class="venue-reviews__head">
@@ -1055,11 +1071,55 @@ const App = {
       <button type="button" class="btn btn--primary btn--block reserve-confirm" data-reserve-action="confirm">
         Confirmar ${plazas} plaza${plazas !== 1 ? 's' : ''}
       </button>
-      <p class="reserve-note">A nombre de ${this.state.authUser.firstName} ${this.state.authUser.lastName}</p>
+      <p class="reserve-note">${this.state.isLoggedIn
+        ? `A nombre de ${this.state.authUser.firstName} ${this.state.authUser.lastName}`
+        : 'Te pediremos una cuenta al confirmar'}</p>
     `;
   },
 
+  /* Puerta de cuenta: se muestra en el mismo sheet al confirmar sin sesión */
+  renderReserveAuth() {
+    const v = this.getVenue(this.state.reserveVenueId);
+    const plazas = this.state.reservePlazas;
+    this.els['reserve-content'].innerHTML = `
+      <div class="access-sheet__header">
+        <div>
+          <p class="access-sheet__overline">Cuenta</p>
+          <h2 class="access-sheet__title" id="reserve-title">Necesitas una cuenta para reservar</h2>
+        </div>
+        <button type="button" class="access-sheet__close" data-reserve-action="close" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <p class="access-sheet__context">Tu reserva de <strong>${plazas} plaza${plazas !== 1 ? 's' : ''}</strong> en <strong>${v ? v.name : 'el sitio'}</strong> te espera — entra o crea una cuenta para confirmarla.</p>
+      <div class="btn-group" style="margin-top: var(--space-4)">
+        <button type="button" class="btn btn--primary btn--block" data-auth-action="login">Iniciar sesión</button>
+        <button type="button" class="btn btn--secondary btn--block" data-auth-action="signup">Crear cuenta</button>
+        <button type="button" class="btn btn--ghost btn--block" data-auth-action="back">Volver a la reserva</button>
+      </div>
+    `;
+  },
+
+  /* Login/registro de la demo: confirma la identidad y completa la reserva */
+  handleAuth() {
+    this.els['reserve-content'].innerHTML = `
+      <div class="reserve-auth-wait">
+        <span class="spinner" aria-hidden="true"></span>
+        <p class="body-m">Confirmando tu identidad…</p>
+      </div>
+    `;
+    window.setTimeout(() => {
+      this.state.isLoggedIn = true;
+      this.updateHeaderProfile();
+      this.confirmReserve();
+    }, 700);
+  },
+
   handleReserveClick(e) {
+    const auth = e.target.closest('[data-auth-action]')?.dataset.authAction;
+    if (auth === 'login' || auth === 'signup') { this.handleAuth(); return; }
+    if (auth === 'back') { this.renderReserve(); return; }
+
     const action = e.target.closest('[data-reserve-action]')?.dataset.reserveAction;
     if (!action) return;
     const v = this.getVenue(this.state.reserveVenueId);
@@ -1077,7 +1137,10 @@ const App = {
       this.renderReserve();
       return;
     }
-    if (action === 'confirm') { this.confirmReserve(); }
+    if (action === 'confirm') {
+      if (!this.state.isLoggedIn) { this.renderReserveAuth(); return; }
+      this.confirmReserve();
+    }
   },
 
   confirmReserve() {
@@ -1251,22 +1314,33 @@ const App = {
 
   openProfile() {
     const u = this.state.authUser;
-    this.els['profile-content'].innerHTML = `
+    const closeBtn = `
+        <button type="button" class="access-sheet__close" data-profile-action="close" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>`;
+    this.els['profile-content'].innerHTML = this.state.isLoggedIn ? `
       <div class="access-sheet__header">
         <div>
           <p class="access-sheet__overline">Sesión iniciada</p>
           <h2 class="access-sheet__title" id="profile-title">${u.firstName} ${u.lastName}</h2>
         </div>
-        <button type="button" class="access-sheet__close" data-profile-action="close" aria-label="Cerrar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
+        ${closeBtn}
       </div>
       <p class="access-sheet__context">${u.email}<br>${u.area}, ${u.city}</p>
       <div class="profile-stats">
         <div><strong>${this.state.tickets.length}</strong><span>entradas</span></div>
       </div>
-      <p class="alert alert--info">En la demo, la sesión se asume iniciada. El registro y la gestión de cuenta llegarán más adelante.</p>
       <button type="button" class="btn btn--ghost btn--block" data-profile-action="close">Cerrar</button>
+    ` : `
+      <div class="access-sheet__header">
+        <div>
+          <p class="access-sheet__overline">Tu cuenta</p>
+          <h2 class="access-sheet__title" id="profile-title">Aún no has iniciado sesión</h2>
+        </div>
+        ${closeBtn}
+      </div>
+      <p class="access-sheet__context">Explora los partidos y sitios sin cuenta. Cuando reserves tu primera plaza te pediremos iniciar sesión o crear una.</p>
+      <button type="button" class="btn btn--secondary btn--block" data-profile-action="close">Entendido</button>
     `;
     this.els['profile-overlay'].classList.add('is-open');
     this.els['profile-sheet'].classList.add('is-open');
